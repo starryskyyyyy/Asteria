@@ -65,7 +65,7 @@
     ],
     "artifactName": "${productName}-${version}-${arch}.${ext}",
     "win": {
-      "icon": "build/icon.png",
+      "icon": "build/icon.ico",
       "target": [
         {
           "target": "nsis",
@@ -89,8 +89,8 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Asteria",
       "deleteAppDataOnUninstall": false,
-      "installerIcon": "build/icon.png",
-      "uninstallerIcon": "build/icon.png"
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
     },
     "linux": {
       "icon": "build/icon.png",
