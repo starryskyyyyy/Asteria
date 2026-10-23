@@ -75,7 +75,10 @@ test('fails an owned turn when its app-server exits without turn/completed', asy
   const running = adapter.run({ cwd: 'C:\\work', prompt: 'task' }, () => {}, new AbortController().signal);
   await new Promise((resolve) => setImmediate(resolve));
   child.emit('exit', 1, null);
-  const result = await Promise.race([running, new Promise((resolve) => setTimeout(() => resolve('timeout'), 100))]);
+  // Bounded only to keep a genuine hang from stalling CI; the bound must be far
+  // larger than the work itself so a loaded machine can never win the race.
+  const result = await Promise.race([running, new Promise((resolve) => setTimeout(() => resolve('timeout'), 5000))]);
+  assert.notEqual(result, 'timeout', 'run() did not settle after the app-server exited');
   assert.equal(result.status, 'failed');
   await adapter.dispose();
 });

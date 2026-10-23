@@ -152,10 +152,10 @@ export class ConversationManager {
     return true;
   }
 
-  async archive(id) {
+  async archive(id, archived = true) {
     this.#assertIdle();
     const conversation = this.#require(id);
-    conversation.archived = true; conversation.updatedAt = new Date().toISOString();
+    conversation.archived = Boolean(archived); conversation.updatedAt = new Date().toISOString();
     await this.#save(conversation); this.#emit({ kind: 'conversation', conversation: publicConversation(conversation) });
     return true;
   }

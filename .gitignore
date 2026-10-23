@@ -28,3 +28,6 @@ desktop.ini
 # local env
 .env
 .env.local
+
+# scratch space used by ad-hoc smoke packaging
+.pack/

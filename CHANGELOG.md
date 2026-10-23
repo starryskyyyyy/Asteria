@@ -11,7 +11,8 @@
 - 实时模型目录（Codex `model/list`、DSH `session/new` configOptions），不写死模型。
 - 审批队列：单次允许/拒绝，provider 侧超时同步清理；未知选项不会自动批准。
 - 事件流持久化：索引与事件分离，事件流按容量裁剪，V1 运行记录只读归档。
-- 三种主题（暗色 / Latte / 跟随系统）、流式 Markdown 渲染、工具调用详情、历史搜索。
+- 双主题（Mocha 暗色 / Latte 亮色）、流式 Markdown 渲染、工具调用详情、历史搜索。
+- 对话归档可逆：归档后仍在侧栏「已归档」分组里，可一键恢复；`Ctrl/Cmd + K` 聚焦搜索；切主题时 Windows 标题栏与窗口边框同步跟随。
 - 界面动效：按钮与卡片的 hover/按下过渡、消息入场、侧栏折叠、审批条出现动画，并遵守 `prefers-reduced-motion`。
 - 工程化：`npm test`（Node 内置测试）、`npm run typecheck`、`npm run build`、`npm run dist`、`npm run icon`、`npm run clean`，以及 Windows/Linux × Node 22/24 的 GitHub Actions CI。
 

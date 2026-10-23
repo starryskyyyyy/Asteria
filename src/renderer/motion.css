@@ -1,0 +1,332 @@
+/*
+ * Asteria motion layer.
+ * Every effect is plain CSS on compositor-friendly properties (transform /
+ * opacity), short (120–260ms) and disabled under prefers-reduced-motion.
+ */
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-out-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes scrim-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scrim-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes modal-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+}
+
+@keyframes attention-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--yellow) 0%, transparent);
+  }
+  45% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--yellow) 16%, transparent);
+  }
+}
+
+@keyframes live-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.82);
+  }
+}
+
+/* --- buttons ---------------------------------------------------------- */
+
+.send-button,
+.stop-button,
+.secondary-button,
+.new-chat,
+.icon-button,
+.plain-icon,
+.plain-button,
+.welcome-cards button,
+.approval-actions button,
+.code-copy,
+.settings-card .secondary-button {
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    color var(--dur-base) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    filter var(--dur-fast) var(--ease-out);
+}
+
+.send-button:hover:not(:disabled),
+.stop-button:hover:not(:disabled),
+.secondary-button:hover:not(:disabled),
+.approval-actions button:hover:not(:disabled) {
+  transform: translateY(var(--hover-lift));
+  filter: brightness(1.08);
+}
+
+.new-chat:hover {
+  transform: translateY(var(--hover-lift));
+}
+
+.icon-button:hover:not(:disabled),
+.plain-icon:hover:not(:disabled),
+.plain-button:hover:not(:disabled) {
+  transform: translateY(var(--hover-lift));
+}
+
+.conversation-item:hover {
+  transform: translateX(1px);
+}
+
+.send-button:active:not(:disabled),
+.stop-button:active:not(:disabled),
+.secondary-button:active:not(:disabled),
+.new-chat:active,
+.icon-button:active:not(:disabled),
+.plain-icon:active:not(:disabled),
+.approval-actions button:active:not(:disabled),
+.welcome-cards button:active {
+  transform: scale(var(--press));
+  transition-duration: 60ms;
+}
+
+.send-button:focus-visible,
+.new-chat:focus-visible,
+.stop-button:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 24%, transparent);
+}
+
+/* --- mount animations ------------------------------------------------- */
+
+.message {
+  animation: fade-rise var(--dur-base) var(--ease-out) both;
+}
+
+.approval-card {
+  animation:
+    fade-rise var(--dur-slow) var(--ease-out) both,
+    attention-pulse 2.4s ease-in-out 260ms infinite;
+}
+
+.approval-actions button {
+  animation: pop-in var(--dur-slow) var(--ease-spring) both;
+}
+
+.approval-actions button:nth-child(2) {
+  animation-delay: 70ms;
+}
+
+.welcome-mark {
+  animation: pop-in var(--dur-slow) var(--ease-spring) both;
+}
+
+.welcome h1,
+.welcome p {
+  animation: fade-rise var(--dur-slow) var(--ease-out) both;
+}
+
+.welcome p {
+  animation-delay: 60ms;
+}
+
+.welcome-cards button {
+  animation: fade-rise var(--dur-slow) var(--ease-out) both;
+}
+
+.tool-feed,
+.turn-tools,
+.tool-card,
+.agent-card {
+  animation: fade-rise var(--dur-base) var(--ease-out) both;
+}
+
+.status-badge.is-live .status-dot,
+.status-dot.is-live,
+.mini-state.is-live {
+  animation: live-pulse 1.8s ease-in-out infinite;
+}
+
+.spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+.typing-caret {
+  animation: blink 1s steps(2) infinite;
+}
+
+/* --- panels, drawer, modal ------------------------------------------- */
+
+.settings-card.panel {
+  animation: slide-in-left var(--dur-slow) var(--ease-out) both;
+}
+
+.settings-card.panel.is-closing {
+  animation: slide-out-left var(--dur-base) var(--ease-out) forwards;
+}
+
+.modal-scrim {
+  animation: scrim-in var(--dur-base) var(--ease-out) both;
+}
+
+.modal-scrim.is-closing {
+  animation: scrim-out var(--dur-base) var(--ease-out) forwards;
+}
+
+.legacy-modal {
+  animation: modal-in var(--dur-slow) var(--ease-out) both;
+}
+
+.legacy-modal.is-closing {
+  animation: modal-out var(--dur-base) var(--ease-out) forwards;
+}
+
+/* --- toasts ----------------------------------------------------------- */
+
+.toast {
+  animation: toast-in var(--dur-base) var(--ease-out) both;
+}
+
+.toast.is-leaving {
+  animation: toast-out 170ms var(--ease-out) forwards;
+}
+
+/* --- skeleton --------------------------------------------------------- */
+
+.skeleton-dot,
+.skeleton-line {
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+/* --- reduced motion --------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --hover-lift: 0px;
+    --press: 1;
+    --dur-fast: 1ms;
+    --dur-base: 1ms;
+    --dur-slow: 1ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .messages-scroll {
+    scroll-behavior: auto;
+  }
+
+  .new-chat:hover,
+  .conversation-item:hover,
+  .icon-button:hover:not(:disabled),
+  .plain-icon:hover:not(:disabled),
+  .plain-button:hover:not(:disabled),
+  .send-button:hover:not(:disabled),
+  .stop-button:hover:not(:disabled),
+  .secondary-button:hover:not(:disabled),
+  .approval-actions button:hover:not(:disabled) {
+    transform: none;
+  }
+}

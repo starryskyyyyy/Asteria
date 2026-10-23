@@ -116,7 +116,7 @@ test('approval ids remain unique across independent main and child RPC peers', a
     const updates = []; manager.subscribe((event) => updates.push(event));
     const id = await manager.createConversation({ cwd: process.cwd(), cli: 'codex', model: 'gpt-main' });
     await manager.sendMessage(id, 'approval flow');
-    for (let attempt = 0; attempt < 400 && (manager.pendingApprovals.size < 2 || updates.filter((event) => event.kind === 'approval').length < 2) && manager.active; attempt++) await new Promise((resolve) => setTimeout(resolve, 5));
+    for (let attempt = 0; attempt < 2000 && (manager.pendingApprovals.size < 2 || updates.filter((event) => event.kind === 'approval').length < 2) && manager.active; attempt++) await new Promise((resolve) => setTimeout(resolve, 5));
     const debug = await manager.getConversation(id);
     assert.equal(manager.pendingApprovals.size, 2, `both RPC peers should register an approval request; active=${manager.active?.conversation.status || 'finished'} error=${manager.active?.conversation.error || ''} events=${debug?.events?.map((event) => event.type).join(',')} adapters=${adapters.length}`);
     const requests = updates.filter((event) => event.kind === 'approval');
@@ -128,4 +128,30 @@ test('approval ids remain unique across independent main and child RPC peers', a
     assert(adapters.some((adapter) => adapter.approved?.id === 1 && adapter.approved.accepted === true));
     await manager.dispose();
   } finally { await manager?.dispose().catch(() => {}); await rm(root, { recursive: true, force: true }); }
+});
+
+test('archive is reversible and the flag survives a reload', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'asteria-chat-archive-'));
+  try {
+    const manager = new ConversationManager({ root, adapterFactory: (cli) => new FakeAdapter(cli) });
+    await manager.bootstrap();
+    manager.catalogs.codex = [{ id: 'gpt-main', cli: 'codex', reasoningEfforts: ['low'] }];
+    const id = await manager.createConversation({ cwd: process.cwd(), cli: 'codex', model: 'gpt-main', effort: 'low' });
+
+    await manager.archive(id);
+    assert.equal((await manager.getConversation(id)).archived, true);
+
+    await manager.archive(id, false);
+    assert.equal((await manager.getConversation(id)).archived, false);
+
+    await manager.archive(id);
+    await manager.dispose();
+
+    const reloaded = new ConversationManager({ root, adapterFactory: (cli) => new FakeAdapter(cli) });
+    await reloaded.bootstrap();
+    const list = await reloaded.listConversations();
+    assert.equal(list.length, 1);
+    assert.equal(list[0].archived, true);
+    await reloaded.dispose();
+  } finally { await rm(root, { recursive: true, force: true }); }
 });

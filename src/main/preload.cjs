@@ -12,9 +12,10 @@ contextBridge.exposeInMainWorld('asteria', Object.freeze({
   sendMessage: (id, text) => ipcRenderer.invoke('asteria:send-message', { id, text }),
   cancel: (id) => ipcRenderer.invoke('asteria:cancel', id),
   resolveApproval: (id, requestId, choice) => ipcRenderer.invoke('asteria:resolve-approval', { id, requestId, choice }),
-  archive: (id) => ipcRenderer.invoke('asteria:archive', id),
+  archive: (id, archived) => ipcRenderer.invoke('asteria:archive', id, archived),
   legacyArchive: () => ipcRenderer.invoke('asteria:legacy-archive'),
   openExternal: (url) => ipcRenderer.invoke('asteria:open-external', url),
+  setTheme: (theme) => ipcRenderer.send('asteria:set-theme', theme),
   onEvent: (listener) => {
     const handler = (_event, value) => listener(value);
     ipcRenderer.on('asteria:event', handler);

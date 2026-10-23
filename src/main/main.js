@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, session, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, session, shell } from 'electron';
 import path from 'node:path';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -50,6 +50,7 @@ async function boot() {
   }
   manager.subscribe((event) => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('asteria:event', event); });
   registerIpc();
+  installMenu();
   createWindow();
 }
 
@@ -73,8 +74,12 @@ function registerIpc() {
   ipcMain.handle('asteria:send-message', (_event, request) => manager.sendMessage(request.id, request.text));
   ipcMain.handle('asteria:cancel', (_event, id) => manager.cancel(id));
   ipcMain.handle('asteria:resolve-approval', (_event, request) => manager.resolveApproval(request.id, request.requestId, request.choice));
-  ipcMain.handle('asteria:archive', (_event, id) => manager.archive(id));
+  ipcMain.handle('asteria:archive', (_event, id, archived) => manager.archive(id, archived !== false));
   ipcMain.handle('asteria:legacy-archive', () => manager.store.listLegacyArchive());
+  // The native frame and menu follow nativeTheme, so the renderer reports its palette.
+  ipcMain.on('asteria:set-theme', (_event, theme) => {
+    nativeTheme.themeSource = theme === 'latte' ? 'light' : 'dark';
+  });
   // Renderer links never navigate the shell; only https/http/mailto reach the OS browser.
   ipcMain.handle('asteria:open-external', async (_event, url) => {
     if (typeof url !== 'string' || url.length > 4096) return false;
@@ -86,13 +91,83 @@ function registerIpc() {
   });
 }
 
+/** Chinese menu bar. Electron ships an English default menu, which looks foreign in a zh-CN app. */
+function installMenu() {
+  const about = () => {
+    void dialog.showMessageBox({
+      type: 'info',
+      title: `关于 ${APP_NAME}`,
+      message: `${APP_NAME} ${app.getVersion()}`,
+      detail: [
+        '本机 CLI 智能体多智能体协作客户端。',
+        '',
+        `Electron ${process.versions.electron}`,
+        `Chromium ${process.versions.chrome}`,
+        `Node ${process.versions.node}`,
+        '',
+        `历史目录：${stateRoot}`,
+      ].join('\n'),
+      buttons: ['好'],
+      noLink: true,
+    });
+  };
+  const template = [
+    {
+      label: '文件',
+      submenu: [
+        { label: '打开历史目录', click: () => { void shell.openPath(stateRoot); } },
+        { type: 'separator' },
+        { label: '退出', accelerator: 'CmdOrCtrl+Q', click: () => app.quit() },
+      ],
+    },
+    {
+      label: '编辑',
+      submenu: [
+        { role: 'undo', label: '撤销' },
+        { role: 'redo', label: '重做' },
+        { type: 'separator' },
+        { role: 'cut', label: '剪切' },
+        { role: 'copy', label: '复制' },
+        { role: 'paste', label: '粘贴' },
+        { role: 'selectAll', label: '全选' },
+      ],
+    },
+    {
+      label: '视图',
+      submenu: [
+        { role: 'reload', label: '重新加载' },
+        { role: 'forceReload', label: '强制重新加载' },
+        { role: 'toggleDevTools', label: '开发者工具' },
+        { type: 'separator' },
+        { role: 'resetZoom', label: '实际大小' },
+        { role: 'zoomIn', label: '放大' },
+        { role: 'zoomOut', label: '缩小' },
+        { type: 'separator' },
+        { role: 'togglefullscreen', label: '全屏' },
+      ],
+    },
+    {
+      label: '帮助',
+      submenu: [
+        { label: '关于 Asteria', click: about },
+        { label: '打开历史目录', click: () => { void shell.openPath(stateRoot); } },
+      ],
+    },
+  ];
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
 function createWindow() {
+  nativeTheme.themeSource = 'dark';
   mainWindow = new BrowserWindow({
     width: 1480, height: 940, minWidth: 980, minHeight: 680,
     backgroundColor: '#101319', title: `${APP_NAME} 2.0`, show: false,
+    autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false },
   });
   mainWindow.once('ready-to-show', () => mainWindow?.show());
+  // The menu stays reachable with Alt but must not eat a strip of a dark UI.
+  mainWindow.setMenuBarVisibility(false);
   mainWindow.on('closed', () => { mainWindow = null; });
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   const entryUrl = pathToFileURL(path.join(__dirname, '../renderer/index.html')).href;

@@ -1,0 +1,53 @@
+name: 缺陷报告
+description: 报告 Asteria 的可复现问题
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。请先确认这不是 CLI 自身的问题（同样操作在 `codex` / `dsh` 命令行里是否正常）。
+        安全漏洞不要在这里提，请看 [SECURITY.md](https://github.com/OWNER/asteria/blob/main/SECURITY.md)。
+  - type: input
+    id: version
+    attributes:
+      label: Asteria 版本
+      description: 应用内「帮助 → 关于 Asteria」里的版本号，或 release 文件名
+      placeholder: 2.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: 操作系统
+      options: [Windows 10, Windows 11, macOS, Linux]
+    validations:
+      required: true
+  - type: input
+    id: cli
+    attributes:
+      label: 相关 CLI 与版本
+      description: 输出 `codex --version` / `dsh --version` 的结果；两者都填更好
+      placeholder: codex-cli 0.162.1 / dsh 0.2.0-rc.2
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 新建对话，选择 …
+        2. 发送 …
+        3. 观察到 …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志与截图
+      description: 开发者工具（视图 → 开发者工具）的 Console 报错，或应用内的错误提示原文
+      render: shell

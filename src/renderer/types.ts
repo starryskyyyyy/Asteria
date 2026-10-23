@@ -122,10 +122,11 @@ export type AsteriaApi = {
   setRoute(id: string, route: Route): Promise<Conversation>;
   sendMessage(id: string, text: string): Promise<{ turnId: string }>;
   cancel(id: string): Promise<boolean>;
-  archive(id: string): Promise<boolean>;
+  archive(id: string, archived?: boolean): Promise<boolean>;
   resolveApproval(id: string, requestId: string | number, choice: boolean | string | number): Promise<boolean>;
   legacyArchive(): Promise<LegacyItem[]>;
   openExternal(url: string): Promise<boolean>;
+  setTheme(theme: string): void;
   onEvent(listener: (event: AsteriaEvent) => void): () => void;
 };
 

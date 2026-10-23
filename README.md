@@ -4,7 +4,7 @@
 
 Asteria 是一个 Electron 桌面客户端。它不自己实现模型，而是驱动你已经装好、已经登录的 CLI：每个对话绑定一个 CLI、一个模型和推理强度，UI 只负责呈现流式输出、工具调用、审批和持久化。
 
-![初始界面](docs/screenshots/Asteria-2.0-初始界面.png)
+![主界面](docs/screenshots/Asteria-2.0-主界面.png)
 
 ## 核心能力
 
@@ -14,9 +14,11 @@ Asteria 是一个 Electron 桌面客户端。它不自己实现模型，而是�
 - **审批可见可控**：CLI 的写文件/执行命令请求统一进 UI 队列，单次允许或拒绝、不升级成永久规则，未知选项不会自动批准；provider 侧超时会同步清掉挂起的对话框。
 - **可中断**：停止主 turn 会中止全部子 turn，并丢弃取消后返回的子结果。
 - **本地持久化**：对话索引与事件流分离（`conversations.json` + 逐会话 `*.jsonl`），事件流按大小裁剪，写入采用原子替换 + 备份回滚；V1 的旧运行记录只作为只读归档展示，不会重放。
-- **三种主题**：暗色、Latte 亮色、跟随系统。
+- **双主题**：Mocha 暗色 / Latte 亮色，切换后 Windows 标题栏与窗口边框同步跟随。
 
-![跨 CLI 聊天](docs/screenshots/Asteria-2.0-跨CLI聊天.png)
+![连接设置](docs/screenshots/Asteria-2.0-连接设置.png)
+
+![Latte 亮色主题](docs/screenshots/Asteria-2.0-Latte.png)
 
 ## 环境要求
 
