@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { ConversationList } from './ConversationList';
 import { SettingsPanel } from './SettingsPanel';
-import type { Conversation } from '../types';
+import type { AgentInfo, ConnectionInfo, Conversation } from '../types';
 
 const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
@@ -11,8 +11,10 @@ export function Sidebar({
   loading,
   search,
   settingsOpen,
-  codexPath,
-  dshPath,
+  agents,
+  connections,
+  cliPaths,
+  developerMode,
   refreshing,
   anyActive,
   theme,
@@ -20,8 +22,8 @@ export function Sidebar({
   onSelect,
   onNewConversation,
   onToggleSettings,
-  onCodexPathChange,
-  onDshPathChange,
+  onPathChange,
+  onToggleDeveloperMode,
   onApply,
   onThemeChange,
   onOpenLegacy,
@@ -31,8 +33,10 @@ export function Sidebar({
   loading: boolean;
   search: string;
   settingsOpen: boolean;
-  codexPath: string;
-  dshPath: string;
+  agents: AgentInfo[];
+  connections: Record<string, ConnectionInfo>;
+  cliPaths: Record<string, string>;
+  developerMode: boolean;
   refreshing: boolean;
   anyActive: boolean;
   theme: string;
@@ -40,8 +44,8 @@ export function Sidebar({
   onSelect(id: string): void;
   onNewConversation(): void;
   onToggleSettings(): void;
-  onCodexPathChange(value: string): void;
-  onDshPathChange(value: string): void;
+  onPathChange(id: string, value: string): void;
+  onToggleDeveloperMode(): void;
   onApply(): void;
   onThemeChange(value: string): void;
   onOpenLegacy(): void;
@@ -88,15 +92,17 @@ export function Sidebar({
 
       <SettingsPanel
         open={settingsOpen}
-        codexPath={codexPath}
-        dshPath={dshPath}
+        agents={agents}
+        connections={connections}
+        cliPaths={cliPaths}
         refreshing={refreshing}
         anyActive={anyActive}
+        developerMode={developerMode}
         theme={theme}
-        onCodexPathChange={onCodexPathChange}
-        onDshPathChange={onDshPathChange}
+        onPathChange={onPathChange}
         onApply={onApply}
         onThemeChange={onThemeChange}
+        onToggleDeveloperMode={onToggleDeveloperMode}
       />
 
       <div className="sidebar-section-label">

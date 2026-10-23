@@ -1,30 +1,35 @@
 import { THEMES } from '../hooks/useTheme';
 import { useExitPresence } from '../hooks/useExitPresence';
 import { Spinner } from './Spinner';
+import type { AgentInfo, ConnectionInfo } from '../types';
 
 /** Connection / appearance settings; slides in and out instead of popping. */
 export function SettingsPanel({
   open,
-  codexPath,
-  dshPath,
+  agents,
+  connections,
+  cliPaths,
   refreshing,
   anyActive,
+  developerMode,
   theme,
-  onCodexPathChange,
-  onDshPathChange,
+  onPathChange,
   onApply,
   onThemeChange,
+  onToggleDeveloperMode,
 }: {
   open: boolean;
-  codexPath: string;
-  dshPath: string;
+  agents: AgentInfo[];
+  connections: Record<string, ConnectionInfo>;
+  cliPaths: Record<string, string>;
   refreshing: boolean;
   anyActive: boolean;
+  developerMode: boolean;
   theme: string;
-  onCodexPathChange(value: string): void;
-  onDshPathChange(value: string): void;
+  onPathChange(id: string, value: string): void;
   onApply(): void;
   onThemeChange(value: string): void;
+  onToggleDeveloperMode(): void;
 }) {
   const { mounted, closing } = useExitPresence(open, 220);
   if (!mounted) return null;
@@ -32,14 +37,24 @@ export function SettingsPanel({
   return (
     <section className={`settings-card panel${closing ? ' is-closing' : ''}`} aria-label="连接设置">
       <div className="settings-title">连接设置</div>
-      <label>
-        Codex 入口
-        <input value={codexPath} onChange={(event) => onCodexPathChange(event.target.value)} placeholder="自动发现 .js / .exe" spellCheck={false} />
-      </label>
-      <label>
-        DSH 入口
-        <input value={dshPath} onChange={(event) => onDshPathChange(event.target.value)} placeholder="自动发现 .js / .exe" spellCheck={false} />
-      </label>
+      {agents.map((agent) => {
+        const info = connections[agent.id];
+        const state = info?.connected ? info.version || '已连接' : info?.diagnostic ? '未就绪' : '未检测';
+        return (
+          <label key={agent.id} className={`cli-field${info?.connected ? ' is-online' : ''}`}>
+            <span className="cli-field-head">
+              {agent.name}
+              <small title={info?.diagnostic || agent.install}>{state}</small>
+            </span>
+            <input
+              value={cliPaths[agent.id] || ''}
+              onChange={(event) => onPathChange(agent.id, event.target.value)}
+              placeholder="自动发现；可填 .js / .exe 绝对路径"
+              spellCheck={false}
+            />
+          </label>
+        );
+      })}
       <button
         className="secondary-button"
         type="button"
@@ -54,6 +69,10 @@ export function SettingsPanel({
         <select value={theme} onChange={(event) => onThemeChange(event.target.value)}>
           {THEMES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
         </select>
+      </label>
+      <label className="switch-row">
+        <input type="checkbox" checked={developerMode} onChange={onToggleDeveloperMode} />
+        开发者模式（显示未验证的 CLI）
       </label>
     </section>
   );

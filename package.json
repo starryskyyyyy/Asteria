@@ -1,8 +1,8 @@
 {
   "name": "asteria",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
-  "description": "Asteria 2.0 — 本机 CLI 智能体（Codex / DSH）多智能体协作客户端",
+  "description": "Asteria 2.1 — 把本机的 Codex / Claude Code / WorkBuddy / DSH 等 agent CLI 放进同一个桌面客户端，并支持跨 CLI 委派",
   "license": "MIT",
   "author": {
     "name": "Asteria Contributors"

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { agentName } from '../lib/agents';
 import { dateLabel, matchesSearch } from '../lib/state';
 import type { Conversation } from '../types';
 import { LiveDot } from './StatusBadge';
@@ -54,7 +55,7 @@ export function ConversationList({
       <LiveDot status={item.status} />
       <span className="conversation-label">
         <b>{item.title}</b>
-        <small>{`${item.route?.cli === 'dsh' ? 'DSH' : 'Codex'} · ${item.route?.model || '未选择模型'}`}</small>
+        <small>{`${agentName(item.route?.cli)} · ${item.route?.model || '未选择模型'}`}</small>
       </span>
       {item.archived ? <span className="archive-chip">已归档</span> : null}
       <time>{dateLabel(item.updatedAt)}</time>

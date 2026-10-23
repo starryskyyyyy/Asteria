@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Composer } from './components/Composer';
 import { Header } from './components/Header';
 import { LegacyModal } from './components/LegacyModal';
@@ -10,12 +10,13 @@ import { Welcome } from './components/Welcome';
 import { useEventStream } from './hooks/useEventStream';
 import { useTheme } from './hooks/useTheme';
 import { useToasts } from './hooks/useToasts';
-import { EMPTY_CATALOGS, errorMessage, isActive, keyFor } from './lib/state';
+import { agentName, pathKey, readStoredPaths, setAgentRegistry } from './lib/agents';
+import { EMPTY_CATALOGS, catalogFor, errorMessage, isActive, keyFor } from './lib/state';
 import type {
+  AgentInfo,
   ApprovalRequest,
   BootstrapResult,
   Catalogs,
-  Cli,
   Connections,
   Conversation,
   LegacyItem,
@@ -24,17 +25,18 @@ import type {
 
 export default function App() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [agents, setAgents] = useState<AgentInfo[]>([]);
+  const [cliPaths, setCliPaths] = useState<Record<string, string>>({});
+  const [developerMode, setDeveloperMode] = useState(() => localStorage.getItem('asteria.developerMode') === '1');
   const [selectedId, setSelectedId] = useState('');
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [connections, setConnections] = useState<Connections>({});
   const [catalogs, setCatalogs] = useState<Catalogs>(EMPTY_CATALOGS);
   const [approvals, setApprovals] = useState<ApprovalRequest[]>([]);
-  const [cli, setCli] = useState<Cli>('codex');
+  const [cli, setCli] = useState('codex');
   const [modelKey, setModelKey] = useState('');
   const [effort, setEffort] = useState('');
   const [workspace, setWorkspace] = useState(() => localStorage.getItem('asteria.workspace') || '');
-  const [codexPath, setCodexPath] = useState(() => localStorage.getItem('asteria.codexPath') || '');
-  const [dshPath, setDshPath] = useState(() => localStorage.getItem('asteria.dshPath') || '');
   const [draft, setDraft] = useState('');
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
@@ -52,17 +54,18 @@ export default function App() {
   const { theme, setTheme } = useTheme();
   const { toasts, dismiss } = useToasts({ error, notice, setError, setNotice });
 
-  const models = catalogs[cli] || [];
+  const cliOptions = agents.filter((agent) => agent.verified || developerMode);
+  const models = catalogFor(catalogs, cli);
   const routeModel = conversation
-    ? models.find((item) => item.id === conversation.route.model && (cli !== 'dsh' || !conversation.route.provider || item.provider === conversation.route.provider))
+    ? models.find((item) => item.id === conversation.route.model && (!conversation.route.provider || item.provider === conversation.route.provider))
     : undefined;
   const chosenKey = modelKey || (routeModel ? keyFor(routeModel) : models[0] ? keyFor(models[0]) : '');
   const chosenModel = models.find((item) => keyFor(item) === chosenKey);
-  const efforts = chosenModel ? (cli === 'codex' ? chosenModel.reasoningEfforts || [] : chosenModel.effortIds || []) : [];
+  const efforts = chosenModel ? chosenModel.reasoningEfforts?.length ? chosenModel.reasoningEfforts : chosenModel.effortIds || [] : [];
   const anyActive = conversations.some((item) => isActive(item.status));
   const thisActive = isActive(conversation?.status);
   const connected = Boolean(connections[cli]?.connected);
-  const cliLabel = cli === 'dsh' ? 'DSH' : 'Codex';
+  const cliLabel = agentName(cli);
   const bottomHint = anyActive && !thisActive
     ? '另一段对话正在生成'
     : chosenModel
@@ -73,22 +76,27 @@ export default function App() {
           ? `模型 ${conversation.route.model} 不在当前列表，请重新选择`
           : '请选择模型后发送';
 
-  function remember(key: string, value: string) {
-    if (value) localStorage.setItem(key, value);
-    else localStorage.removeItem(key);
+  function updatePaths(next: Record<string, string>) {
+    setCliPaths(next);
+    for (const [id, value] of Object.entries(next)) {
+      if (value) localStorage.setItem(pathKey(id), value);
+      else localStorage.removeItem(pathKey(id));
+    }
   }
 
-  async function refresh() {
+  function setPath(id: string, value: string) {
+    updatePaths({ ...cliPaths, [id]: value });
+  }
+
+  async function refresh(paths: Record<string, string> = cliPaths) {
     setRefreshing(true);
     setError('');
     try {
-      const result = await window.asteria.getConnections({ codex: codexPath, dsh: dshPath });
+      const result = await window.asteria.getConnections(paths);
       setConnections(result.connections || {});
       setCatalogs(result.catalogs || EMPTY_CATALOGS);
-      localStorage.setItem('asteria.codexPath', codexPath);
-      localStorage.setItem('asteria.dshPath', dshPath);
       if (!result.catalogs?.[cli]?.length) {
-        setError(result.connections?.[cli]?.diagnostic || `${cli} 当前没有可用模型。`);
+        setError(result.connections?.[cli]?.diagnostic || `${cliLabel} 当前没有可用模型。`);
       }
     } catch (failure) {
       setError(errorMessage(failure, '连接检查失败。'));
@@ -155,9 +163,9 @@ export default function App() {
     return { cli, model: chosenModel.id, provider: chosenModel.provider || null, effort: effort || efforts[0] || '' };
   }
 
-  async function applyRoute(nextCli: Cli, nextKey: string, nextEffort: string) {
+  async function applyRoute(nextCli: string, nextKey: string, nextEffort: string) {
     if (!conversation) return;
-    const list = catalogs[nextCli] || [];
+    const list = catalogFor(catalogs, nextCli);
     const model = list.find((item) => keyFor(item) === nextKey) || list[0];
     if (!model) return;
     try {
@@ -179,7 +187,7 @@ export default function App() {
     if (!text || anyActive || busy) return;
     const selectedRoute = currentRoute();
     if (!selectedRoute) {
-      setError(`${cli} 还没有可用模型，请检查连接。`);
+      setError(`${cliLabel} 还没有可用模型，请检查连接。`);
       return;
     }
     if (!workspace) {
@@ -224,10 +232,20 @@ export default function App() {
   }
 
   async function resolve(request: ApprovalRequest, accepted: boolean) {
-    const allow = request.options?.find((item) => item.kind === 'allow_once');
-    const reject = request.options?.find((item) => item.kind === 'reject_once');
-    if (request.cli === 'dsh' && accepted && !allow) return;
-    const choice = request.cli === 'dsh' ? (accepted ? allow?.optionId : reject?.optionId || false) : accepted;
+    // ACP approvals carry explicit option ids; app-server approvals are a plain yes/no.
+    const options = request.options || [];
+    if (!options.length) {
+      try {
+        await window.asteria.resolveApproval(request.conversationId, request.requestId, accepted);
+      } catch (failure) {
+        setError(errorMessage(failure, '审批操作失败。'));
+      }
+      return;
+    }
+    const allow = options.find((item) => item.kind === 'allow_once');
+    const reject = options.find((item) => item.kind === 'reject_once');
+    if (accepted && !allow) return;
+    const choice = accepted ? allow?.optionId : reject?.optionId || false;
     try {
       await window.asteria.resolveApproval(request.conversationId, request.requestId, choice ?? false);
     } catch (failure) {
@@ -268,6 +286,10 @@ export default function App() {
     setShowEvents((value) => !value);
   }
 
+  useEffect(() => {
+    localStorage.setItem('asteria.developerMode', developerMode ? '1' : '0');
+  }, [developerMode]);
+
   useEventStream({
     setConversations,
     setConversation,
@@ -275,11 +297,21 @@ export default function App() {
     setCatalogs,
     setApprovals,
     async onBootstrap(result: BootstrapResult, isDisposed: () => boolean) {
+      const list = result.agents || [];
+      setAgentRegistry(list);
+      setAgents(list);
+      const stored = readStoredPaths(list);
+      setCliPaths(stored);
       setConversations(result.conversations || []);
       if (result.legacyArchive?.length) setLegacy(result.legacyArchive);
       setConnections(result.connections || {});
-      await refresh();
       setBooting(false);
+      // Prefer the CLI the user last picked, but never leave the composer on an unavailable one.
+      const options = list.filter((agent) => agent.verified || developerMode);
+      const preferred = options.find((agent) => agent.id === (localStorage.getItem('asteria.lastCli') || 'codex')) || options[0];
+      if (preferred) setCli(preferred.id);
+      if (isDisposed()) return;
+      await refresh(stored);
       if (isDisposed()) return;
       const latest = (result.conversations || []).find((item) => !item.archived);
       if (latest) void openConversation(latest.id);
@@ -298,8 +330,10 @@ export default function App() {
         loading={booting}
         search={search}
         settingsOpen={showSettings}
-        codexPath={codexPath}
-        dshPath={dshPath}
+        agents={cliOptions}
+        connections={connections}
+        cliPaths={cliPaths}
+        developerMode={developerMode}
         refreshing={refreshing}
         anyActive={anyActive}
         theme={theme}
@@ -307,8 +341,8 @@ export default function App() {
         onSelect={(id) => void openConversation(id)}
         onNewConversation={newConversation}
         onToggleSettings={() => setShowSettings((value) => !value)}
-        onCodexPathChange={(value) => { setCodexPath(value); remember('asteria.codexPath', value); }}
-        onDshPathChange={(value) => { setDshPath(value); remember('asteria.dshPath', value); }}
+        onPathChange={setPath}
+        onToggleDeveloperMode={() => setDeveloperMode((value) => !value)}
         onApply={() => void refresh()}
         onThemeChange={setTheme}
         onOpenLegacy={() => void openLegacy()}
@@ -328,17 +362,17 @@ export default function App() {
 
         <RouteBar
           cli={cli}
+          agents={cliOptions}
           models={models}
           chosenKey={chosenKey}
           efforts={efforts}
           effort={effort}
           hasConversation={Boolean(conversation)}
           onCliChange={(nextCli) => {
+            localStorage.setItem('asteria.lastCli', nextCli);
             setCli(nextCli);
-            const list = catalogs[nextCli] || [];
-            const initial = nextCli === 'dsh'
-              ? keyFor(list.find((item) => !modelKey || keyFor(item) === modelKey) || list[0] || { id: '' })
-              : keyFor(list[0] || { id: '' });
+            const list = catalogFor(catalogs, nextCli);
+            const initial = keyFor(list.find((item) => keyFor(item) === modelKey) || list[0] || { id: '' });
             setModelKey(initial);
             setEffort('');
             if (conversation) void applyRoute(nextCli, initial, '');

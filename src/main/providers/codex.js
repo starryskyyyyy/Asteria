@@ -35,7 +35,7 @@ export class CodexAdapter {
       const args = this.cli.nodePath ? [this.cli.entryPath, 'app-server', '--stdio'] : ['app-server', '--stdio'];
       const child = this.spawnImpl(executable, args, { windowsHide: true, shell: false, stdio: ['pipe', 'pipe', 'pipe'] });
       this.child = child;
-      const peer = new JsonRpcPeer(child, { timeoutMs: 30_000 });
+      const peer = new JsonRpcPeer(child, { timeoutMs: 30_000, label: 'Codex' });
       this.peer = peer;
       peer.on('stderr', (text) => { this.stderr = `${this.stderr}${text}`.slice(-10_000); this.eventSink?.({ type: 'stderr', text, raw: { stream: 'stderr' } }); });
       peer.on('notification', (message) => this.#notification(message));

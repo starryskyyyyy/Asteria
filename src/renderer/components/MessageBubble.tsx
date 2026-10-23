@@ -1,4 +1,5 @@
 import type { Message, ToolEvent } from '../types';
+import { agentName } from '../lib/agents';
 import { DelegationPanel } from './DelegationPanel';
 import { Markdown } from './Markdown';
 
@@ -20,7 +21,7 @@ export function MessageBubble({
   onCopied(key: string): void;
 }) {
   const isUser = message.role === 'user';
-  const cliLabel = message.route?.cli === 'dsh' ? 'DSH' : 'Codex';
+  const cliLabel = agentName(message.route?.cli);
   const caption = `${message.route?.provider ? `${message.route.provider} · ` : ''}${message.route?.model || ''}`;
   const streaming = !isUser && message.status === 'running';
 

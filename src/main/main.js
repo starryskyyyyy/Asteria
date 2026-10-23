@@ -3,6 +3,7 @@ import path from 'node:path';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { ConversationManager } from './conversation-manager.js';
+import { AGENTS, publicAgent } from './agents.js';
 import { APP_ID, APP_NAME } from './app-info.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -25,9 +26,14 @@ function settingsFile() { return path.join(stateRoot, 'settings.json'); }
 async function loadSettings() {
   try {
     const parsed = JSON.parse(await readFile(settingsFile(), 'utf8'));
-    const cliPaths = parsed?.cliPaths && typeof parsed.cliPaths === 'object' ? parsed.cliPaths : {};
-    return { cliPaths: { codex: typeof cliPaths.codex === 'string' ? cliPaths.codex : '', dsh: typeof cliPaths.dsh === 'string' ? cliPaths.dsh : '' } };
-  } catch { return { cliPaths: { codex: '', dsh: '' } }; }
+    const stored = parsed?.cliPaths && typeof parsed.cliPaths === 'object' ? parsed.cliPaths : {};
+    // Unknown keys are dropped rather than trusted: the registry is the only source of valid ids.
+    const cliPaths = {};
+    for (const agent of AGENTS) cliPaths[agent.id] = typeof stored[agent.id] === 'string' ? stored[agent.id] : '';
+    return { cliPaths };
+  } catch {
+    return { cliPaths: Object.fromEntries(AGENTS.map((agent) => [agent.id, ''])) };
+  }
 }
 
 async function saveSettings(settings) {
@@ -57,7 +63,7 @@ async function boot() {
 function registerIpc() {
   // Asteria needs no device permissions at all; deny every request instead of prompting.
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
-  ipcMain.handle('asteria:bootstrap', () => manager.bootstrap());
+  ipcMain.handle('asteria:bootstrap', async () => ({ ...(await manager.bootstrap()), agents: AGENTS.map(publicAgent) }));
   ipcMain.handle('asteria:connections', async (_event, paths = {}) => {
     const result = await manager.refreshCatalogs(paths);
     await saveSettings({ cliPaths: manager.cliPaths });

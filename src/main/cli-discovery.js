@@ -3,20 +3,18 @@ import { promisify } from 'node:util';
 import { access, readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import path from 'node:path';
+import { AGENTS, CODEX_ENTRY, DSH_ENTRY, DSH_NODE, getAgent } from './agents.js';
 
 const execFile = promisify(execFileCallback);
 
-/** Never let an unset APPDATA turn into a *relative* candidate path. */
-function appData() {
-  return process.env.APPDATA || path.join(homedir(), 'AppData', 'Roaming');
-}
+export { CODEX_ENTRY, DSH_ENTRY, DSH_NODE };
+
 function localAppData() {
   return process.env.LOCALAPPDATA || path.join(homedir(), 'AppData', 'Local');
 }
-
-export const CODEX_ENTRY = path.join(appData(), 'npm', 'node_modules', '@openai', 'codex', 'bin', 'codex.js');
-export const DSH_ENTRY = path.join(appData(), 'dsh-tauri', 'dependencies', 'dsh', 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js');
-export const DSH_NODE = path.join(appData(), 'dsh-tauri', 'runtime', 'node.exe');
+function appData() {
+  return process.env.APPDATA || path.join(homedir(), 'AppData', 'Roaming');
+}
 
 const PROGRAM_FILES = [process.env.ProgramW6432, process.env.ProgramFiles, process.env['ProgramFiles(x86)']].filter(Boolean);
 
@@ -32,25 +30,66 @@ export async function findNode() {
   return null;
 }
 
-export async function resolveCli(provider, explicitPath = '') {
+function agentEnv(agent) {
+  return { ...process.env, ...(agent?.streamJson?.env || {}), ...(agent?.acp?.env || {}) };
+}
+
+/**
+ * Resolve one agent's CLI to something spawnable.
+ *
+ * Returns `{ provider, executablePath, entryPath, nodePath, diagnostic? }`; `entryPath` is the
+ * JavaScript entry we run through `nodePath`, or the executable itself for native binaries.
+ */
+export async function resolveCli(id, explicitPath = '') {
+  const agent = getAgent(id);
+  if (!agent) throw new Error(`未知的 CLI：${String(id)}`);
   const nodePath = await findNode();
-  const defaultEntry = provider === 'codex' ? CODEX_ENTRY : DSH_ENTRY;
-  const candidates = explicitPath ? [explicitPath] : [defaultEntry, ...await pathShimCandidates(provider)];
-  for (const candidate of candidates) {
+  const known = explicitPath ? [explicitPath] : [...await knownEntries(agent), ...await pathShimCandidates(agent)];
+  for (const candidate of known) {
     if (/\.(cmd|bat|ps1)$/i.test(candidate) && await exists(candidate)) {
-      const resolved = await resolveShim(provider, candidate, nodePath);
+      const resolved = await resolveShim(agent, candidate, nodePath);
       if (resolved) return resolved;
       continue;
     }
-    if (candidate.toLowerCase().endsWith('.js') && nodePath && await exists(candidate)) return { provider, executablePath: candidate, entryPath: candidate, nodePath };
-    if (candidate.toLowerCase().endsWith('.exe') && await exists(candidate)) return { provider, executablePath: candidate, entryPath: candidate, nodePath: null };
+    const launchable = await launchableEntry(agent, candidate, nodePath, candidate);
+    if (launchable) return launchable;
   }
-  const shim = provider === 'codex' ? path.join(appData(), 'npm', 'codex.cmd') : path.join(localAppData(), 'deepseek-harness', 'bin', 'dsh.cmd');
-  return { provider, executablePath: explicitPath || shim, entryPath: null, nodePath, diagnostic: `${provider === 'codex' ? 'Codex' : 'DSH'} CLI 未找到。可在设置中指定 CLI JavaScript 入口。` };
+  const fallback = explicitPath || (await fallbackShim(agent));
+  return { provider: agent.id, cliId: agent.id, executablePath: fallback, entryPath: null, nodePath, diagnostic: `未找到 ${agent.name}。可在设置中指定可执行入口，或先安装：${agent.install}` };
 }
 
-export async function probeCli(provider, explicitPath = '', execFileImpl = execFile) {
-  const found = await resolveCli(provider, explicitPath);
+/**
+ * Decide how to launch one file: a native `.exe` runs directly, a `.js`/`.mjs`/`.cjs` file (or an
+ * extensionless launcher such as WorkBuddy's `cli/bin/codebuddy`) runs through the Node runtime.
+ */
+async function launchableEntry(agent, file, nodePath, executablePath) {
+  if (!file || !await exists(file)) return null;
+  const lower = file.toLowerCase();
+  if (lower.endsWith('.exe')) return { provider: agent.id, cliId: agent.id, executablePath: executablePath || file, entryPath: file, nodePath: null };
+  const isScript = lower.endsWith('.js') || lower.endsWith('.mjs') || lower.endsWith('.cjs');
+  const isExtensionless = !path.extname(file);
+  if ((isScript || isExtensionless) && nodePath) return { provider: agent.id, cliId: agent.id, executablePath: executablePath || file, entryPath: file, nodePath };
+  return null;
+}
+
+async function knownEntries(agent) {
+  try {
+    const found = await agent.entries();
+    return (Array.isArray(found) ? found : [found]).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+async function fallbackShim(agent) {
+  const name = agent.executables?.[0] || agent.id;
+  const shim = path.join(appData(), 'npm', process.platform === 'win32' ? `${name}.cmd` : name);
+  if (await exists(shim)) return shim;
+  return path.join(localAppData(), 'deepseek-harness', 'bin', process.platform === 'win32' ? `${name}.cmd` : name);
+}
+
+export async function probeCli(id, explicitPath = '', execFileImpl = execFile) {
+  const found = await resolveCli(id, explicitPath);
   if (!found.entryPath) return { ...found, version: null, connected: false };
   if (!found.nodePath && !found.entryPath.toLowerCase().endsWith('.exe')) {
     return { ...found, version: null, connected: false, diagnostic: '未找到可用的 Node.js 运行时，无法启动该 CLI。' };
@@ -58,25 +97,36 @@ export async function probeCli(provider, explicitPath = '', execFileImpl = execF
   try {
     const command = found.nodePath || found.entryPath;
     const args = found.nodePath ? [found.entryPath, '--version'] : ['--version'];
-    const { stdout } = await execFileImpl(command, args, { timeout: 10_000, windowsHide: true, encoding: 'utf8', maxBuffer: 64 * 1024 });
+    const { stdout } = await execFileImpl(command, args, { timeout: 20_000, windowsHide: true, encoding: 'utf8', maxBuffer: 64 * 1024, env: agentEnv(getAgent(id)) });
     const version = String(stdout || '').trim().split(/\r?\n/)[0].slice(0, 120);
     return { ...found, version, connected: Boolean(version), diagnostic: '' };
   } catch (error) {
-    return { ...found, version: null, connected: false, diagnostic: `CLI 版本检查失败：${String(error.stderr || error.message).slice(0, 500)}` };
+    const detail = String(error?.stderr || error?.message || error).trim().slice(0, 500);
+    return { ...found, version: null, connected: false, diagnostic: `CLI 版本检查失败：${detail}` };
   }
 }
 
+/** Probe every registered agent in parallel. Unknown ids in `paths` are ignored. */
 export async function detectClis(paths = {}) {
-  return Object.fromEntries(await Promise.all(['codex', 'dsh'].map(async (provider) => [provider, await probeCli(provider, paths[provider] || '')])));
+  // One broken registry entry must never sink the whole list: each probe fails on its own.
+  const entries = await Promise.all(AGENTS.map(async (agent) => {
+    try {
+      return [agent.id, await probeCli(agent.id, typeof paths[agent.id] === 'string' ? paths[agent.id] : '')];
+    } catch (error) {
+      return [agent.id, { provider: agent.id, cliId: agent.id, entryPath: null, nodePath: null, version: null, connected: false, diagnostic: `无法检测 ${agent.name}：${String(error?.message || error)}` }];
+    }
+  }));
+  return Object.fromEntries(entries);
 }
 
 async function exists(file) {
   try { await access(file); return true; } catch { return false; }
 }
 
-async function pathShimCandidates(provider) {
-  const base = provider === 'codex' ? 'codex' : 'dsh';
-  const names = process.platform === 'win32' ? [`${base}.exe`, `${base}.cmd`, `${base}.ps1`, `${base}.bat`] : [base];
+async function pathShimCandidates(agent) {
+  const names = process.platform === 'win32'
+    ? (agent.executables || []).flatMap((base) => [`${base}.exe`, `${base}.cmd`, `${base}.ps1`, `${base}.bat`])
+    : [...(agent.executables || [])];
   const found = [];
   for (const directory of String(process.env.PATH || '').split(path.delimiter).filter(Boolean)) {
     for (const name of names) {
@@ -87,18 +137,31 @@ async function pathShimCandidates(provider) {
   return found;
 }
 
-async function resolveShim(provider, shim, nodePath) {
+/**
+ * npm/pnpm launcher shims are tiny scripts that mention the real payload. Reading that reference is
+ * far more reliable than guessing `node_modules` layout, and it is vendor-agnostic. The payload may
+ * be a Node script (`codex.js`) or a native binary (`claude.exe`), so both are accepted.
+ */
+async function resolveShim(agent, shim, nodePath) {
   let source;
   try { source = await readFile(shim, 'utf8'); } catch { return null; }
-  if (provider === 'dsh') {
+  const shimDir = path.dirname(shim);
+
+  const windowsStyle = source.match(/[%~]dp0%?[\\/]+([^";\r\n]+?\.(?:js|cjs|mjs|exe)\b)/i);
+  const relativeStyle = source.match(/(?:^|[\s"'])((?:\.\.?[\\/]|node_modules[\\/])[^";\r\n]*?\.(?:js|cjs|mjs|exe)\b)/i);
+  const candidates = [windowsStyle?.[1], relativeStyle?.[1]].filter(Boolean).map((entry) => path.resolve(shimDir, entry));
+  for (const entry of candidates) {
+    const launchable = await launchableEntry(agent, entry, nodePath, shim);
+    if (launchable) return launchable;
+  }
+
+  // DSH ships a hand-written shim that exports its paths as environment variables.
+  if (agent.id === 'dsh') {
     const entry = source.match(/(?:DSH_BIN=|\$dshBin\s*=\s*')["']?([^"'\r\n]+)["']?/i)?.[1]?.trim();
     const bundledNode = source.match(/(?:NODE_BIN=|\$nodeBin\s*=\s*')["']?([^"'\r\n]+)["']?/i)?.[1]?.trim();
     const executable = entry || DSH_ENTRY;
     const runtime = bundledNode && await exists(bundledNode) ? bundledNode : nodePath;
-    if (runtime && await exists(executable)) return { provider, executablePath: shim, entryPath: executable, nodePath: runtime };
-  } else {
-    const entry = path.join(path.dirname(shim), 'node_modules', '@openai', 'codex', 'bin', 'codex.js');
-    if (nodePath && await exists(entry)) return { provider, executablePath: shim, entryPath: entry, nodePath };
+    if (runtime && await exists(executable)) return { provider: agent.id, cliId: agent.id, executablePath: shim, entryPath: executable, nodePath: runtime };
   }
   return null;
 }

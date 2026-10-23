@@ -14,15 +14,20 @@ export const statusLabel: Record<string, string> = {
   interrupted: '已中断',
 };
 
-export const EMPTY_CATALOGS: Catalogs = { codex: [], dsh: [] };
+export const EMPTY_CATALOGS: Catalogs = {};
 
 export function isActive(status?: string) {
   return Boolean(status && activeStatus.has(status));
 }
 
-/** Catalog keys fold the provider in only when there is one (DSH routes). */
+/** Catalog keys fold the provider in only when there is one (multi-provider routes). */
 export function keyFor(model: { id: string; provider?: string | null }) {
   return model.provider ? `${model.provider}/${model.id}` : model.id;
+}
+
+/** Models a CLI currently offers; a missing catalog is empty, not an error. */
+export function catalogFor(catalogs: Catalogs | undefined, cli: string) {
+  return catalogs?.[cli] || [];
 }
 
 export function upsertMessage(conversation: Conversation, message: Message): Conversation {

@@ -31,10 +31,12 @@ test('JSON-RPC parses responses split across arbitrary stdout chunks', async () 
 
 test('JSON-RPC rejects outstanding requests when the child exits', async () => {
   const child = fakeProcess();
-  const peer = new JsonRpcPeer(child, { timeoutMs: 1000 });
+  const peer = new JsonRpcPeer(child, { timeoutMs: 1000, label: 'Codex' });
   const pending = peer.request('thread/start', {});
+  child.stderr.emit('data', Buffer.from('boom: permission denied\n'));
   child.emit('exit', 2, null);
-  await assert.rejects(pending, /exited.*2/i);
+  // 退出原因要同时带上进程名、退出码和最后一条 stderr，否则用户无法排查。
+  await assert.rejects(pending, /Codex .*code 2.*boom: permission denied/s);
 });
 
 test('JSON-RPC emits complete notifications while retaining partial lines', () => {

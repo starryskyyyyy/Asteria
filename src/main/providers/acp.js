@@ -1,5 +1,4 @@
 import { spawn } from 'node:child_process';
-import { homedir } from 'node:os';
 import path from 'node:path';
 import { JsonRpcPeer } from '../json-rpc.js';
 import { resolveCli } from '../cli-discovery.js';
@@ -7,14 +6,18 @@ import { APP_NAME, APP_VERSION } from '../app-info.js';
 
 const PERMISSION_TIMEOUT_MS = 120_000;
 
-function dshEnv() {
-  return { ...process.env, DSH_HOME: process.env.DSH_HOME || path.join(homedir(), '.dsh'), DSH_TELEMETRY_DISABLED: '1' };
+/** Extra environment variables a specific ACP backend needs (merged over process.env). */
+function acpEnv(spec) {
+  return { ...process.env, ...(spec?.env || {}) };
 }
 
-/** Persistent ACP session adapter. One instance owns one DSH process and one ACP session. */
-export class DshAcpAdapter {
-  constructor({ cli, nodePath, scriptPath, spawnImpl = spawn, onEvent = () => {} } = {}) {
+/** Persistent ACP session adapter. One instance owns one CLI process and one ACP session. */
+export class AcpAdapter {
+  constructor({ cli, nodePath, scriptPath, cliId = 'dsh', spec = {}, spawnImpl = spawn, onEvent = () => {} } = {}) {
     this.cli = cli;
+    this.cliId = cliId;
+    this.spec = spec;
+    this.label = spec?.label || cliId;
     this.nodePath = nodePath;
     this.scriptPath = scriptPath;
     this.spawnImpl = spawnImpl;
@@ -35,18 +38,19 @@ export class DshAcpAdapter {
   async connect({ cwd = process.cwd(), mcpUrl = null, resumeSessionId = null } = {}) {
     if (this.peer) return this.connection();
     if (this.cli) { this.nodePath = this.cli.nodePath; this.scriptPath = this.cli.entryPath; }
-    if (!this.scriptPath) { const found = await resolveCli('dsh'); this.nodePath ||= found.nodePath; this.scriptPath ||= found.entryPath; }
-    if (!this.scriptPath || (!this.nodePath && !this.scriptPath.toLowerCase().endsWith('.exe'))) return { connected: false, models: [], diagnostic: '未找到 DSH ACP CLI 入口。' };
+    if (!this.scriptPath) { const found = await resolveCli(this.cliId); this.nodePath ||= found.nodePath; this.scriptPath ||= found.entryPath; }
+    if (!this.scriptPath || (!this.nodePath && !this.scriptPath.toLowerCase().endsWith('.exe'))) return { connected: false, models: [], diagnostic: `未找到 ${this.label} 的 ACP 入口。` };
     try {
       const command = this.nodePath || this.scriptPath;
-      const args = this.nodePath ? ['--use-system-ca', this.scriptPath, '--profile', 'acp'] : ['--profile', 'acp'];
-      this.child = this.spawnImpl(command, args, { cwd, windowsHide: true, shell: false, stdio: ['pipe', 'pipe', 'pipe'], env: dshEnv() });
-      this.peer = new JsonRpcPeer(this.child, { timeoutMs: 120_000 });
+      const acpArgs = this.spec.acpArgs || ['--profile', 'acp'];
+      const args = this.nodePath ? [...(this.spec.nodeArgs || []), this.scriptPath, ...acpArgs] : [...acpArgs];
+      this.child = this.spawnImpl(command, args, { cwd, windowsHide: true, shell: false, stdio: ['pipe', 'pipe', 'pipe'], env: acpEnv(this.spec) });
+      this.peer = new JsonRpcPeer(this.child, { timeoutMs: 120_000, label: this.spec.name || this.cliId });
       this.peer.on('stderr', (text) => { this.stderr = `${this.stderr}${text}`.slice(-5000); (this.eventSink || this.onEvent)({ type: 'stderr', text, raw: { stream: 'stderr' } }); });
       this.peer.on('notification', (message) => this.#notification(message));
       this.peer.on('request', (message) => this.#serverRequest(message));
       this.peer.on('close', (error) => {
-        if (this.active) this.active.finish({ status: this.active.signal?.aborted ? 'cancelled' : 'failed', error: `DSH ACP closed: ${error?.message || 'process exited'}` });
+        if (this.active) this.active.finish({ status: this.active.signal?.aborted ? 'cancelled' : 'failed', error: `ACP 连接已关闭：${error?.message || 'process exited'}` });
         this.peer = null;
         this.sessionId = null;
       });
@@ -67,35 +71,35 @@ export class DshAcpAdapter {
   }
 
   async run({ cwd, prompt, provider, model, effort, sessionId = null, mcpUrl = null }, onEvent = this.onEvent, signal) {
-    if (signal?.aborted) return { status: 'cancelled', error: '取消后未启动 DSH turn。' };
+    if (signal?.aborted) return { status: 'cancelled', error: '取消后未启动 ACP turn。' };
     if (!this.peer || !this.sessionId) {
       const connection = await this.connect({ cwd, mcpUrl, resumeSessionId: sessionId });
       if (!connection.connected) return { status: 'failed', error: connection.diagnostic };
     }
-    if (signal?.aborted) return { status: 'cancelled', error: 'DSH 会话启动期间已取消。' };
-    if (sessionId && this.sessionId !== sessionId) return { status: 'failed', error: 'DSH ACP resumed an unexpected session.' };
+    if (signal?.aborted) return { status: 'cancelled', error: 'ACP 会话启动期间已取消。' };
+    if (sessionId && this.sessionId !== sessionId) return { status: 'failed', error: 'ACP ACP resumed an unexpected session.' };
     this.eventSink = onEvent;
     try {
       const selected = JSON.stringify([provider || this.defaultRoute?.provider, model || this.defaultRoute?.model]);
       if (provider && model) {
         const available = this.catalog.some((entry) => entry.provider === provider && entry.id === model);
-        if (!available) { this.eventSink = null; return { status: 'failed', error: `所选 DSH 模型不可用：${provider}/${model}` }; }
+        if (!available) { this.eventSink = null; return { status: 'failed', error: `所选 ACP 模型不可用：${provider}/${model}` }; }
         const option = this.configOptions.find((item) => item.id === 'model');
         if (option?.currentValue !== selected) {
           const update = await this.peer.request('session/set_config_option', { sessionId: this.sessionId, configId: 'model', value: selected });
           if (update.configOptions) this.#readCatalog(update.configOptions);
         }
       }
-      if (signal?.aborted) { this.eventSink = null; return { status: 'cancelled', error: 'DSH 路由设置期间已取消。' }; }
+      if (signal?.aborted) { this.eventSink = null; return { status: 'cancelled', error: 'ACP 路由设置期间已取消。' }; }
       const supported = this.efforts.some((entry) => entry.id === effort);
       if (effort && supported) {
         const update = await this.peer.request('session/set_config_option', { sessionId: this.sessionId, configId: 'reasoning_effort', value: effort });
         if (update.configOptions) this.#readCatalog(update.configOptions);
       }
-      if (signal?.aborted) { this.eventSink = null; return { status: 'cancelled', error: 'DSH 路由设置期间已取消。' }; }
+      if (signal?.aborted) { this.eventSink = null; return { status: 'cancelled', error: 'ACP 路由设置期间已取消。' }; }
     } catch (error) {
       this.eventSink = null;
-      return { status: 'failed', error: `DSH route selection failed: ${error.message}` };
+      return { status: 'failed', error: `ACP route selection failed: ${error.message}` };
     }
     return new Promise((resolve) => {
       let settled = false;
@@ -117,17 +121,17 @@ export class DshAcpAdapter {
       active.finish = finish;
       this.active = active;
       signal?.addEventListener('abort', abort, { once: true });
-      if (signal?.aborted) { finish({ status: 'cancelled', error: '取消后未启动 DSH turn。' }); return; }
+      if (signal?.aborted) { finish({ status: 'cancelled', error: '取消后未启动 ACP turn。' }); return; }
       this.peer.request('session/prompt', { sessionId: this.sessionId, prompt: [{ type: 'text', text: prompt }] }).then((response) => {
         if (response?.stopReason === 'end_turn' || response?.stopReason === 'completed') finish({ status: 'completed', output: active.output });
-        else if (response?.stopReason === 'cancelled' || response?.stopReason === 'user_cancelled') finish({ status: 'cancelled', output: active.output, error: 'DSH turn cancelled.' });
-        else finish({ status: 'failed', error: `DSH ended with stop reason ${response?.stopReason || 'unknown'}.` });
+        else if (response?.stopReason === 'cancelled' || response?.stopReason === 'user_cancelled') finish({ status: 'cancelled', output: active.output, error: 'ACP turn cancelled.' });
+        else finish({ status: 'failed', error: `ACP ended with stop reason ${response?.stopReason || 'unknown'}.` });
       }).catch((error) => finish({ status: signal?.aborted ? 'cancelled' : 'failed', error: String(error?.message || error) }));
     });
   }
 
   connection() {
-    return { connected: Boolean(this.peer && this.sessionId), executablePath: this.scriptPath, version: this.cli?.version || 'DSH ACP', models: this.catalog, efforts: this.efforts, defaultRoute: this.defaultRoute, sessionId: this.sessionId, diagnostic: '' };
+    return { connected: Boolean(this.peer && this.sessionId), executablePath: this.scriptPath, version: this.cli?.version || this.spec.version || 'ACP', models: this.catalog, efforts: this.efforts, defaultRoute: this.defaultRoute, sessionId: this.sessionId, diagnostic: '' };
   }
 
   async resolvePermission(requestId, optionId = null) {
@@ -152,7 +156,7 @@ export class DshAcpAdapter {
       let timer;
       await Promise.race([active.done, new Promise((resolve) => { timer = setTimeout(resolve, 5_000); })]);
       if (timer) clearTimeout(timer);
-      if (!active.settled) { await this.#terminate(); active.finish({ status: 'cancelled', error: 'DSH ACP turn stopped.' }); }
+      if (!active.settled) { await this.#terminate(); active.finish({ status: 'cancelled', error: 'ACP ACP turn stopped.' }); }
     })();
     return active.stopPromise;
   }
@@ -171,7 +175,7 @@ export class DshAcpAdapter {
       let route;
       try { route = JSON.parse(item.value); } catch { return null; }
       if (!Array.isArray(route) || route.length !== 2) return null;
-      return { id: route[1], name: item.name || route[1], provider: route[0], cli: 'dsh', effortIds: [] };
+      return { id: route[1], name: item.name || route[1], provider: route[0], cli: this.cliId, effortIds: [] };
     }).filter(Boolean));
     let current = null;
     try { current = models?.currentValue ? JSON.parse(models.currentValue) : null; } catch { current = null; }
@@ -207,11 +211,11 @@ export class DshAcpAdapter {
       const timer = setTimeout(() => {
         if (!this.pendingPermissions.has(message.id)) return;
         // Surfaced so the host can drop the prompt from its queue instead of showing a dead dialog.
-        (this.eventSink || this.onEvent)({ type: 'approval_expired', text: 'DSH 审批请求超时，已自动拒绝。', raw: message });
+        (this.eventSink || this.onEvent)({ type: 'approval_expired', text: 'ACP 审批请求超时，已自动拒绝。', raw: message });
         this.resolvePermission(message.id, 'decline').catch(() => {});
       }, PERMISSION_TIMEOUT_MS);
       this.pendingPermissions.set(message.id, { options, timer });
-      (this.eventSink || this.onEvent)({ type: 'approval_request', text: `DSH 请求批准：${message.params?.toolCall?.title || message.params?.toolCall?.kind || '工具操作'}`, raw: message });
+      (this.eventSink || this.onEvent)({ type: 'approval_request', text: `ACP 请求批准：${message.params?.toolCall?.title || message.params?.toolCall?.kind || '工具操作'}`, raw: message });
       return;
     }
     this.peer?.respondError(message.id, -32601, `Unsupported ACP server request: ${message.method}`);

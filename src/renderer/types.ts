@@ -4,7 +4,31 @@
  * stays the single source of truth.
  */
 
-export type Cli = 'codex' | 'dsh';
+/** CLI ids are registry keys, so the renderer never enumerates them. */
+export type Cli = string;
+
+/** Wire protocol a CLI speaks; it decides which capabilities the UI may offer. */
+export type Channel = 'app-server' | 'acp' | 'stream-json';
+
+export type AgentSupports = {
+  models: boolean;
+  approvals: boolean;
+  resume: boolean;
+  delegates: boolean;
+  effort: boolean;
+};
+
+/** Static description of a supported CLI, sent once by the main process. */
+export type AgentInfo = {
+  id: string;
+  name: string;
+  vendor: string;
+  channel: Channel;
+  home: string;
+  install: string;
+  verified: boolean;
+  supports: AgentSupports;
+};
 
 export type Route = { cli: Cli; model: string; provider?: string | null; effort?: string };
 
@@ -62,6 +86,8 @@ export type ConnectionInfo = {
   connected?: boolean;
   diagnostic?: string;
   entryPath?: string;
+  executablePath?: string;
+  version?: string | null;
   defaultRoute?: { model: string; provider?: string | null };
 };
 
@@ -85,6 +111,7 @@ export type BootstrapResult = {
   conversations?: Conversation[];
   legacyArchive?: LegacyItem[];
   connections?: Connections;
+  agents?: AgentInfo[];
 };
 
 export type ConnectionsResult = { connections?: Connections; catalogs?: Catalogs };
@@ -114,7 +141,7 @@ export type AsteriaEvent =
 /** The frozen preload bridge. `openExternal` never navigates the shell itself. */
 export type AsteriaApi = {
   bootstrap(): Promise<BootstrapResult>;
-  getConnections(paths: { codex?: string; dsh?: string }): Promise<ConnectionsResult>;
+  getConnections(paths: Record<string, string>): Promise<ConnectionsResult>;
   pickFolder(): Promise<string | null>;
   listConversations(): Promise<Conversation[]>;
   getConversation(id: string): Promise<(Conversation & { events?: ToolEvent[] }) | null>;

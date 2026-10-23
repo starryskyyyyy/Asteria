@@ -12,14 +12,32 @@ export class JsonRpcPeer extends EventEmitter {
   #pending = new Map();
   #closedError = null;
 
-  constructor(child, { timeoutMs = 120_000 } = {}) {
+  #stderrTail = '';
+
+  constructor(child, { timeoutMs = 120_000, label = 'CLI' } = {}) {
     super();
     this.#child = child;
+    this.label = label;
     this.timeoutMs = timeoutMs;
     child.stdout?.on('data', (chunk) => this.#consume(chunk));
-    child.stderr?.on('data', (chunk) => this.emit('stderr', Buffer.isBuffer(chunk) ? this.#stderrDecoder.write(chunk) : String(chunk)));
+    child.stderr?.on('data', (chunk) => {
+      const text = Buffer.isBuffer(chunk) ? this.#stderrDecoder.write(chunk) : String(chunk);
+      this.#stderrTail = `${this.#stderrTail}${text}`.slice(-4000);
+      this.emit('stderr', text);
+    });
     child.on('error', (error) => this.#fail(error));
-    child.on('exit', (code, signal) => this.#fail(new Error(`app-server exited with code ${code ?? 'null'}${signal ? ` (${signal})` : ''}`)));
+    child.on('exit', (code, signal) => this.#fail(new Error(this.#exitMessage(code, signal))));
+  }
+
+  // 退出原因必须让用户看懂：把最后一条 stderr 一并带出来，否则只看到「进程退出」无从排查。
+  #exitMessage(code, signal) {
+    const reason = `${this.label} 进程已退出（code ${code ?? 'null'}${signal ? `, ${signal}` : ''}）`;
+    const detail = this.#stderrTail
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .pop();
+    return detail ? `${reason}：${detail.slice(0, 300)}` : reason;
   }
 
   request(method, params = {}, timeoutMs = this.timeoutMs) {

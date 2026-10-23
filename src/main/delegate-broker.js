@@ -1,11 +1,16 @@
 import { createServer } from 'node:http';
 import { randomBytes } from 'node:crypto';
+import { AGENTS } from './agents.js';
 
 export const PROTOCOL_VERSION = '2025-06-18';
 
+/** Only agents whose channel can run a bounded one-shot task may appear in the delegate schema. */
+const DELEGATE_CLIS = AGENTS.filter((agent) => agent.supports?.delegates).map((agent) => agent.id);
+const DELEGATE_NAMES = AGENTS.filter((agent) => agent.supports?.delegates).map((agent) => agent.name).join(', ');
+
 export const DELEGATION_TOOLS = [
-  { name: 'asteria_list_models', description: 'List the currently available Codex and DSH models and supported effort values. Use before dispatching if the route is uncertain.', inputSchema: { type: 'object', properties: {}, additionalProperties: false } },
-  { name: 'asteria_delegate', description: 'Dispatch a bounded task to a real child CLI model, wait for its result, then continue your own reasoning. The child cannot delegate further. The workspace is fixed to this conversation. readOnly is supported only for Codex; DSH cannot enforce read-only execution.', inputSchema: { type: 'object', properties: { cli: { type: 'string', enum: ['codex', 'dsh'] }, provider: { type: 'string', description: 'Required for DSH, ignored for Codex.' }, model: { type: 'string', description: 'A model ID from asteria_list_models.' }, effort: { type: 'string', description: 'A supported effort ID, if offered by that model.' }, task: { type: 'string', minLength: 1, maxLength: 20000 }, readOnly: { type: 'boolean', default: false, description: 'Codex only. DSH read-only requests are rejected because ACP cannot enforce a sandbox.' } }, required: ['cli', 'task'], additionalProperties: false } },
+  { name: 'asteria_list_models', description: `List the models and effort values currently offered by each connected CLI (${DELEGATE_NAMES}). Use before dispatching if the route is uncertain.`, inputSchema: { type: 'object', properties: {}, additionalProperties: false } },
+  { name: 'asteria_delegate', description: 'Dispatch a bounded task to a real child CLI model, wait for its result, then continue your own reasoning. The child cannot delegate further. The workspace is fixed to this conversation. readOnly is only enforceable on CLI channels that expose a sandbox.', inputSchema: { type: 'object', properties: { cli: { type: 'string', enum: DELEGATE_CLIS, description: `Which CLI runs the child task. Supported: ${DELEGATE_CLIS.join(', ')}.` }, provider: { type: 'string', description: 'Provider id for CLIs that multiplex providers (for example DSH); optional elsewhere.' }, model: { type: 'string', description: 'A model ID from asteria_list_models.' }, effort: { type: 'string', description: 'A supported effort ID, if offered by that model.' }, task: { type: 'string', minLength: 1, maxLength: 20000 }, readOnly: { type: 'boolean', default: false, description: 'Ask for a read-only child run; rejected when the chosen CLI channel cannot enforce a sandbox.' } }, required: ['cli', 'task'], additionalProperties: false } },
 ];
 
 const MAX_BODY_BYTES = 1_000_000;

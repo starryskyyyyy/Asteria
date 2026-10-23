@@ -4,7 +4,9 @@ import { stat } from 'node:fs/promises';
 import { ConversationStore, validConversationId } from './conversation-store.js';
 import { DELEGATION_TOOLS, DelegateBroker } from './delegate-broker.js';
 import { CodexAdapter } from './providers/codex.js';
-import { DshAcpAdapter } from './providers/dsh.js';
+import { AcpAdapter } from './providers/acp.js';
+import { StreamJsonAdapter } from './providers/stream-json.js';
+import { AGENTS, getAgent } from './agents.js';
 import { detectClis, resolveCli } from './cli-discovery.js';
 
 const terminal = new Set(['completed', 'failed', 'cancelled']);
@@ -17,7 +19,7 @@ const MAX_RAW_EVENT_BYTES = 32 * 1024;
 export class ConversationManager {
   constructor({ root, store = new ConversationStore(root), adapterFactory = defaultAdapterFactory, cliPaths = {} } = {}) {
     this.store = store; this.adapterFactory = adapterFactory; this.cliPaths = { ...cliPaths };
-    this.conversations = new Map(); this.runtime = new Map(); this.listeners = new Set(); this.active = null; this.catalogs = { codex: [], dsh: [] }; this.connections = {};
+    this.conversations = new Map(); this.runtime = new Map(); this.listeners = new Set(); this.active = null; this.catalogs = {}; this.connections = {};
     this.pendingApprovals = new Map();
     this.bootPromise = null;
   }
@@ -50,30 +52,42 @@ export class ConversationManager {
 
   async refreshCatalogs(paths = this.cliPaths) {
     this.#assertIdle();
-    for (const key of ['codex', 'dsh']) if (paths[key] !== undefined && paths[key] !== '') {
-      if (typeof paths[key] !== 'string' || paths[key].length > 2000 || !path.isAbsolute(paths[key])) throw new Error(`${key} CLI 路径必须是绝对路径。`);
+    const nextPaths = {};
+    for (const agent of AGENTS) {
+      const value = paths[agent.id] ?? this.cliPaths[agent.id] ?? '';
+      if (value !== '' && (typeof value !== 'string' || value.length > 2000 || !path.isAbsolute(value))) throw new Error(`${agent.name} CLI 路径必须是绝对路径。`);
+      nextPaths[agent.id] = value;
     }
-    const nextPaths = { codex: paths.codex || '', dsh: paths.dsh || '' };
-    const changedPaths = nextPaths.codex !== this.cliPaths.codex || nextPaths.dsh !== this.cliPaths.dsh;
+    const changedPaths = AGENTS.some((agent) => nextPaths[agent.id] !== (this.cliPaths[agent.id] || ''));
     this.cliPaths = nextPaths;
     if (changedPaths) {
       await Promise.all([...this.runtime.values()].map((runtime) => runtime.adapter?.dispose?.().catch(() => {})));
       this.runtime.clear();
       // A different CLI install cannot resume session ids captured from the previous one.
       for (const conversation of this.conversations.values()) {
-        conversation.native = { codex: null, dsh: null, syncedCounts: { codex: 0, dsh: 0 } };
+        conversation.native = nativeState();
         await this.store.save(conversation);
       }
     }
     const detected = await detectClis(this.cliPaths);
-    const codexCli = detected.codex.entryPath ? detected.codex : await resolveCli('codex', this.cliPaths.codex);
-    const dshCli = detected.dsh.entryPath ? detected.dsh : await resolveCli('dsh', this.cliPaths.dsh);
-    const codex = this.adapterFactory('codex', { cli: codexCli });
-    const dsh = this.adapterFactory('dsh', { cli: dshCli });
-    const [codexState, dshState] = await Promise.all([codex.connect(), dsh.connect({ cwd: process.cwd() })]);
-    this.catalogs = { codex: (codexState.models || []).map((model) => ({ ...model, cli: 'codex' })), dsh: (dshState.models || []).map((model) => ({ ...model, cli: 'dsh' })) };
-    this.connections = { codex: { ...detected.codex, ...codexState }, dsh: { ...detected.dsh, ...dshState } };
-    await Promise.all([codex.dispose?.(), dsh.dispose?.()]);
+    // Probing is one conversation handshake per installed CLI; a broken backend must not abort the rest.
+    const states = await Promise.all(AGENTS.map(async (agent) => {
+      const found = detected[agent.id];
+      if (!found?.entryPath) return [agent.id, { ...found, connected: false, models: [], diagnostic: found?.diagnostic || '未在 PATH 或默认安装目录中找到。' }];
+      const adapter = this.adapterFactory(agent.id, { cli: { entryPath: found.entryPath, nodePath: found.nodePath, executablePath: found.executablePath } });
+      try {
+        const state = await adapter.connect({ cwd: process.cwd() });
+        // The `--version` probe is the authoritative build number; channels only report a placeholder.
+        const version = found.version || state.version || '';
+        return [agent.id, { ...found, ...state, version, models: (state.models || []).map((model) => ({ ...model, cli: agent.id })) }];
+      } catch (error) {
+        return [agent.id, { ...found, connected: false, models: [], diagnostic: String(error?.message || error) }];
+      } finally {
+        await adapter.dispose?.().catch(() => {});
+      }
+    }));
+    this.catalogs = Object.fromEntries(states.map(([id, state]) => [id, state.models || []]));
+    this.connections = Object.fromEntries(states);
     this.#emit({ kind: 'connections', connections: this.connections, catalogs: this.catalogs });
     return { connections: this.connections, catalogs: this.catalogs };
   }
@@ -83,7 +97,7 @@ export class ConversationManager {
     const workspace = await validateCwd(cwd);
     const route = this.#resolveRoute({ cli, provider, model, effort });
     const now = new Date().toISOString();
-    const conversation = { id: randomUUID(), schemaVersion: 2, title: '新对话', cwd: workspace, route, createdAt: now, updatedAt: now, status: 'idle', messages: [], native: { codex: null, dsh: null, syncedCounts: { codex: 0, dsh: 0 } }, error: '' };
+    const conversation = { id: randomUUID(), schemaVersion: 2, title: '新对话', cwd: workspace, route, createdAt: now, updatedAt: now, status: 'idle', messages: [], native: nativeState(), error: '' };
     this.conversations.set(conversation.id, conversation);
     await this.#save(conversation);
     this.#emit({ kind: 'conversation', conversation: publicConversation(conversation) });
@@ -140,7 +154,7 @@ export class ConversationManager {
     if (!ctl || ctl.conversation.id !== validId(id) || !approval || approval.ctl !== ctl) return false;
     this.pendingApprovals.delete(requestId);
     let resolved;
-    if (approval.kind === 'dsh') {
+    if (approval.kind === 'acp') {
       const option = approval.options.find((item) => item.kind === (choice ? 'allow_once' : 'reject_once'));
       resolved = await approval.adapter.resolvePermission(approval.nativeRequestId, option?.optionId || null);
     }
@@ -174,7 +188,7 @@ export class ConversationManager {
     conversation.status = 'running'; await this.#save(conversation); this.#emit({ kind: 'conversation', conversation: publicConversation(conversation) });
     const previousCli = conversation.native.lastCli;
     let prompt = userText;
-    const synced = conversation.native.syncedCounts ||= { codex: 0, dsh: 0 };
+    const synced = conversation.native.syncedCounts ||= {};
     // Anchor on the turn id, not a positional "-2": tool events and interrupted turns shift the tail.
     const missingContext = conversation.messages.slice(synced[route.cli] || 0).filter((message) => message.turnId !== ctl.turnId && (message.role === 'user' || (message.role === 'assistant' && message.text)));
     if (previousCli && previousCli !== route.cli && missingContext.length) {
@@ -182,10 +196,12 @@ export class ConversationManager {
       prompt = `以下是为切换 CLI 提供的文本对话背景，仅作为上下文，不代表可重放之前的工具操作。\n\n${transcript}\n\n当前用户消息：\n${userText}`;
       await this.#event(ctl, 'handoff', `将 ${missingContext.length} 条缺失的文本对话背景交给 ${route.cli}；不会重放此前的工具调用。`, { bridgedMessages: missingContext.length });
     }
+    const agent = getAgent(route.cli);
     const toolCall = (name, args) => this.#tool(ctl, name, args);
-    const dynamicTools = route.cli === 'codex' ? this.#codexTools() : [];
+    // Codex accepts host-defined function tools; ACP agents get delegation through an MCP bridge.
+    const dynamicTools = agent?.channel === 'app-server' ? this.#codexTools() : [];
     let mcpUrl = null;
-    if (route.cli === 'dsh') {
+    if (agent?.channel === 'acp' && agent.supports?.delegates) {
       ctl.broker = new DelegateBroker({ handlers: { listModels: () => this.#modelListing(), delegate: (args) => this.#tool(ctl, 'asteria_delegate', args) } });
       mcpUrl = await ctl.broker.start();
     }
@@ -214,8 +230,10 @@ export class ConversationManager {
 
   async #delegate(ctl, args) {
     if (ctl.abort.signal.aborted) throw new Error('Parent conversation was cancelled.');
-    if (!args || !['codex', 'dsh'].includes(args.cli)) throw new Error('子代理必须选择 Codex 或 DSH CLI。');
-    if (args.cli === 'dsh' && args.readOnly === true) throw new Error('DSH ACP 当前无法强制只读，请不要将 DSH 子代理用于只读任务。');
+    if (!args || !getAgent(args.cli)) throw new Error('子代理必须选择一个已支持的 CLI。');
+    const childAgent = getAgent(args.cli);
+    if (!childAgent.supports?.delegates) throw new Error(`${childAgent.name} 不支持作为子代理。`);
+    if (childAgent.channel === 'acp' && args.readOnly === true) throw new Error(`${childAgent.name} 的 ACP 通道当前无法强制只读，请不要将它用于只读子任务。`);
     const task = validText(args.task);
     const route = this.#resolveRoute({ cli: args.cli, provider: args.provider, model: args.model, effort: args.effort });
     // Charge the budget only once the request is known to be valid.
@@ -318,7 +336,7 @@ export class ConversationManager {
     await Promise.allSettled([ctl.adapter?.stop?.(), ...[...ctl.childControllers].map((child) => child.adapter?.stop?.())]);
     for (const [approvalId, pending] of [...this.pendingApprovals]) if (pending.ctl === ctl) {
       this.pendingApprovals.delete(approvalId);
-      if (pending.kind === 'dsh') await pending.adapter.resolvePermission(pending.nativeRequestId, null).catch(() => {});
+      if (pending.kind === 'acp') await pending.adapter.resolvePermission(pending.nativeRequestId, null).catch(() => {});
       else await pending.adapter.resolveApproval(pending.nativeRequestId, false).catch(() => {});
     }
     await ctl.eventChain;
@@ -354,16 +372,18 @@ export class ConversationManager {
   }
 
   #resolveRoute({ cli, provider, model, effort }) {
-    if (!['codex', 'dsh'].includes(cli)) throw new Error('只支持 Codex 与 DSH。');
-    const list = this.catalogs[cli] || [];
+    const agent = getAgent(cli);
+    if (!agent) throw new Error('该 CLI 不在支持列表中，请刷新连接。');
+    const multiProvider = Boolean(agent.acp?.multiProvider);
+    const list = this.catalogs[agent.id] || [];
     let candidate;
-    if (model) candidate = list.find((item) => item.id === model && (cli !== 'dsh' || !provider || item.provider === provider));
-    else if (cli === 'dsh' && this.connections.dsh?.defaultRoute) candidate = list.find((item) => item.id === this.connections.dsh.defaultRoute.model && item.provider === this.connections.dsh.defaultRoute.provider);
+    if (model) candidate = list.find((item) => item.id === model && (!multiProvider || !provider || item.provider === provider));
+    else if (multiProvider && this.connections[agent.id]?.defaultRoute) candidate = list.find((item) => item.id === this.connections[agent.id].defaultRoute.model && item.provider === this.connections[agent.id].defaultRoute.provider);
     else candidate = list[0];
-    if (!candidate) throw new Error(`${cli === 'dsh' ? `DSH ${provider ? `${provider}/` : ''}${model || '默认'}模型` : `Codex ${model || '模型'}`} 不在当前 CLI 返回的实时目录中，请刷新连接。`);
-    if (cli === 'dsh' && provider && candidate.provider !== provider) throw new Error(`DSH provider 与模型路由不匹配：${provider}/${candidate.id}`);
+    if (!candidate) throw new Error(`${agent.name} ${provider ? `${provider}/` : ''}${model || '默认'}模型 不在当前 CLI 返回的实时目录中，请刷新连接。`);
+    if (multiProvider && provider && candidate.provider !== provider) throw new Error(`${agent.name} provider 与模型路由不匹配：${provider}/${candidate.id}`);
     if (effort && candidate.reasoningEfforts?.length && !candidate.reasoningEfforts.includes(effort) && !candidate.effortIds?.includes(effort)) throw new Error(`模型 ${candidate.id} 不支持推理强度 ${effort}。`);
-    return { cli, provider: candidate.provider || null, model: candidate.id, effort: effort || (cli === 'dsh' ? '' : candidate.reasoningEfforts?.[0] || '') };
+    return { cli: agent.id, provider: candidate.provider || null, model: candidate.id, effort: effort || (multiProvider ? '' : candidate.reasoningEfforts?.[0] || '') };
   }
 
   #modelListing() { return this.catalogs; }
@@ -374,7 +394,21 @@ export class ConversationManager {
   #emit(event) { for (const listener of this.listeners) { try { listener(event); } catch {} } }
 }
 
-export function defaultAdapterFactory(cli, options) { return cli === 'codex' ? new CodexAdapter(options) : new DshAcpAdapter(options); }
+/** One adapter implementation per wire protocol; the registry decides which one an id maps to. */
+export function defaultAdapterFactory(cli, options = {}) {
+  const agent = getAgent(cli);
+  if (!agent) throw new Error(`未知的 CLI：${String(cli)}`);
+  if (agent.channel === 'app-server') return new CodexAdapter(options);
+  if (agent.channel === 'acp') return new AcpAdapter({ ...options, cliId: agent.id, spec: agent.acp });
+  return new StreamJsonAdapter({ ...options, cliId: agent.id, spec: agent.streamJson });
+}
+
+/** Per-conversation, per-CLI resume bookkeeping. Unknown CLIs simply get no entry. */
+function nativeState() {
+  const state = { lastCli: null, syncedCounts: {} };
+  for (const agent of AGENTS) { state[agent.id] = null; state.syncedCounts[agent.id] = 0; }
+  return state;
+}
 async function validateCwd(cwd) { if (typeof cwd !== 'string' || !path.isAbsolute(cwd) || cwd.length > 3000) throw new Error('工作目录必须是有效绝对路径。'); const info = await stat(cwd).catch(() => null); if (!info?.isDirectory()) throw new Error('工作目录不存在或不是文件夹。'); return path.resolve(cwd); }
 function validText(text) { if (typeof text !== 'string' || !text.trim() || text.length > 100_000) throw new Error('请输入 1–100000 个字符的有效内容。'); return text; }
 function validId(id) { return validConversationId(id); }

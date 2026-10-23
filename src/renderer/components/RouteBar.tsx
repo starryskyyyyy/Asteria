@@ -1,8 +1,9 @@
 import { keyFor } from '../lib/state';
-import type { CatalogModel, Cli } from '../types';
+import type { AgentInfo, CatalogModel, Cli } from '../types';
 
 export function RouteBar({
   cli,
+  agents,
   models,
   chosenKey,
   efforts,
@@ -13,6 +14,8 @@ export function RouteBar({
   onEffortChange,
 }: {
   cli: Cli;
+  /** Only the CLIs the user may pick (verified, or developer mode is on). */
+  agents: AgentInfo[];
   models: CatalogModel[];
   chosenKey: string;
   efforts: string[];
@@ -26,9 +29,8 @@ export function RouteBar({
     <section className="route-bar">
       <label className="route-select">
         <span className="select-caption">CLI</span>
-        <select value={cli} onChange={(event) => onCliChange(event.target.value as Cli)}>
-          <option value="codex">Codex</option>
-          <option value="dsh">DSH</option>
+        <select value={cli} onChange={(event) => onCliChange(event.target.value)}>
+          {agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
         </select>
       </label>
       <span className="route-divider" aria-hidden="true">/</span>
