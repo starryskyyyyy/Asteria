@@ -1,0 +1,1243 @@
+{
+  "at": "2026-10-21T12:10:21.163Z",
+  "projectTests": {
+    "command": "npm test",
+    "passed": 37,
+    "failed": 0
+  },
+  "independent": {
+    "at": "2026-10-21T12:03:59.049Z",
+    "result": [
+      {
+        "name": "same CLI different model can delegate with distinct adapter",
+        "passed": true
+      },
+      {
+        "name": "switching A to B to A bridges missing context and resumes A",
+        "passed": true
+      },
+      {
+        "name": "delegation events remain available after history reload",
+        "passed": true
+      },
+      {
+        "name": "parallel model tool requests run children serially",
+        "passed": true
+      },
+      {
+        "name": "stop during child cancels child and preserves cancelled state",
+        "passed": true
+      },
+      {
+        "name": "store serializes concurrent conversation saves without dropping records",
+        "passed": true
+      },
+      {
+        "name": "startup recovers interrupted active turn without rerunning it",
+        "passed": true
+      },
+      {
+        "name": "bootstrap while generation is active does not interrupt live state",
+        "passed": true
+      },
+      {
+        "name": "main disconnect aborts an active child before closing its MCP broker",
+        "passed": true
+      },
+      {
+        "name": "DSH MCP HTTP path also serializes simultaneous child tool calls",
+        "passed": true
+      },
+      {
+        "name": "store recovers valid backup: missing-main",
+        "passed": true
+      },
+      {
+        "name": "store recovers valid backup: corrupt-main",
+        "passed": true
+      },
+      {
+        "name": "corrupt history with no valid backup fails without overwriting bytes",
+        "passed": true
+      },
+      {
+        "name": "completed state means cleanup is done and scheduler can immediately accept a new chat",
+        "passed": true
+      }
+    ]
+  },
+  "memory": {
+    "at": "2026-10-21T11:34:51.937Z",
+    "root": "C:\\Users\\starryskyyy\\Documents\\Codex\\2026-10-19\\yu-e\\work\\acceptance-v2\\real-memory-1792582451719",
+    "results": [
+      {
+        "name": "codex native memory and restart resume",
+        "passed": true,
+        "id": "c245a8f4-9e59-417f-9411-7c2fb2f31b1a",
+        "nativeBefore": "01a15e3d-937f-7411-aee4-a6c6bbfe7c6d",
+        "output": "ASTERIA_MEMORY_CODEX_1792582455817"
+      },
+      {
+        "name": "dsh native memory and restart resume",
+        "passed": true,
+        "id": "aa59ad72-a7bd-4fa7-907e-efbf497159a4",
+        "nativeBefore": "364e50b4-c56c-4d2e-9f3d-92e30901fd77",
+        "output": "ASTERIA_MEMORY_DSH_1792582479451"
+      }
+    ]
+  },
+  "delegation": {
+    "at": "2026-10-21T11:36:18.541Z",
+    "root": "C:\\Users\\starryskyyy\\Documents\\Codex\\2026-10-19\\yu-e\\work\\acceptance-v2\\real-delegation-1792582535951",
+    "results": [
+      {
+        "name": "Codex main → DSH child → main continuation",
+        "passed": true,
+        "id": "b236fbbc-8ec0-440d-b822-3ba4b7721a64",
+        "trace": [
+          {
+            "type": "stderr",
+            "text": "{\"timestamp\":\"2026-10-21T11:35:40.308807Z\",\"level\":\"WARN\",\"fields\":{\"message\":\"ignoring interface.icon_small: icon path with '..' must resolve under plugin assets/\"},\"target\":\"codex_skills::interface\"}\n{\"timestamp\":\"2026-10-21T11:35:40.308892Z\",\"level\":\"WARN\",\"fields\":{\"message\":\"ignoring interface."
+          },
+          {
+            "type": "stderr",
+            "text": "{\"timestamp\":\"2026-10-21T11:35:40.318627Z\",\"level\":\"WARN\",\"fields\":{\"message\":\"Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell\"},\"target\":\"codex_core::shell_snapshot\"}\n"
+          },
+          {
+            "type": "thread/started",
+            "text": ""
+          },
+          {
+            "type": "warning",
+            "text": ""
+          },
+          {
+            "type": "mcpServer/startupStatus/updated",
+            "text": ""
+          },
+          {
+            "type": "mcpServer/startupStatus/updated",
+            "text": ""
+          },
+          {
+            "type": "mcpServer/startupStatus/updated",
+            "text": ""
+          },
+          {
+            "type": "mcpServer/startupStatus/updated",
+            "text": ""
+          },
+          {
+            "type": "thread/settings/updated",
+            "text": ""
+          },
+          {
+            "type": "mcpServer/startupStatus/updated",
+            "text": ""
+          },
+          {
+            "type": "thread/status/changed",
+            "text": ""
+          },
+          {
+            "type": "turn/started",
+            "text": "turn inProgress"
+          },
+          {
+            "type": "mcpServer/startupStatus/updated",
+            "text": ""
+          },
+          {
+            "type": "account/updated",
+            "text": ""
+          },
+          {
+            "type": "stderr",
+            "text": "{\"timestamp\":\"2026-10-21T11:35:41.710003Z\",\"level\":\"WARN\",\"fields\":{\"message\":\"ignoring interface.icon_small: icon path with '..' must resolve under plugin assets/\"},\"target\":\"codex_skills::interface\"}\n"
+          },
+          {
+            "type": "stderr",
+            "text": "{\"timestamp\":\"2026-10-21T11:35:41.710051Z\",\"level\":\"WARN\",\"fields\":{\"message\":\"ignoring interface.icon_large: icon path with '..' must resolve under plugin assets/\"},\"target\":\"codex_skills::interface\"}\n"
+          },
+          {
+            "type": "mcpServer/startupStatus/updated",
+            "text": ""
+          },
+          {
+            "type": "mcpServer/startupStatus/updated",
+            "text": ""
+          },
+          {
+            "type": "mcpServer/startupStatus/updated",
+            "text": ""
+          },
+          {
+            "type": "mcpServer/startupStatus/updated",
+            "text": ""
+          },
+          {
+            "type": "hook/started",
+            "text": ""
+          },
+          {
+            "type": "hook/completed",
+            "text": ""
+          },
+          {
+            "type": "hook/started",
+            "text": ""
+          },
+          {
+            "type": "hook/completed",
+            "text": ""
+          },
+          {
+            "type": "item/started",
+            "text": ""
+          },
+          {
+            "type": "item/completed",
+            "text": ""
+          },
+          {
+            "type": "item/started",
+            "text": ""
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": "I"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": "’ll"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": " make"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": " the"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": " single"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": " requested"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": " delegation"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": " and"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": " wait"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": " for"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": " the"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": " child"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": "’s"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": " result"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": "."
+          },
+          {
+            "type": "item/completed",
+            "text": "I’ll make the single requested delegation and wait for the child’s result."
+          },
+          {
+            "type": "turn/moderationMetadata",
+            "text": ""
+          },
+          {
+            "type": "hook/started",
+            "text": ""
+          },
+          {
+            "type": "hook/completed",
+            "text": ""
+          },
+          {
+            "type": "item/started",
+            "text": ""
+          },
+          {
+            "type": "delegate_started",
+            "text": "dsh 子代理开始：deepseek-v4-flash · deepseek-official",
+            "agentId": "47b39953-acd2-4711-974c-66b7e3e90d85",
+            "route": {
+              "cli": "dsh",
+              "provider": "deepseek-official",
+              "model": "deepseek-v4-flash",
+              "effort": ""
+            }
+          },
+          {
+            "type": "usage_update",
+            "text": "usage_update",
+            "agentId": "47b39953-acd2-4711-974c-66b7e3e90d85"
+          },
+          {
+            "type": "tool_call",
+            "text": "write",
+            "agentId": "47b39953-acd2-4711-974c-66b7e3e90d85"
+          },
+          {
+            "type": "tool_call_update",
+            "text": "tool_call_update",
+            "agentId": "47b39953-acd2-4711-974c-66b7e3e90d85"
+          },
+          {
+            "type": "usage_update",
+            "text": "usage_update",
+            "agentId": "47b39953-acd2-4711-974c-66b7e3e90d85"
+          },
+          {
+            "type": "tool_call",
+            "text": "read",
+            "agentId": "47b39953-acd2-4711-974c-66b7e3e90d85"
+          },
+          {
+            "type": "tool_call_update",
+            "text": "tool_call_update",
+            "agentId": "47b39953-acd2-4711-974c-66b7e3e90d85"
+          },
+          {
+            "type": "agent_message_chunk",
+            "text": "DSH_CHILD_COMPLETE",
+            "agentId": "47b39953-acd2-4711-974c-66b7e3e90d85"
+          },
+          {
+            "type": "usage_update",
+            "text": "usage_update",
+            "agentId": "47b39953-acd2-4711-974c-66b7e3e90d85"
+          },
+          {
+            "type": "delegate_finished",
+            "text": "dsh 子代理完成",
+            "agentId": "47b39953-acd2-4711-974c-66b7e3e90d85",
+            "status": "completed"
+          },
+          {
+            "type": "item/completed",
+            "text": ""
+          },
+          {
+            "type": "hook/started",
+            "text": ""
+          },
+          {
+            "type": "hook/completed",
+            "text": ""
+          },
+          {
+            "type": "thread/tokenUsage/updated",
+            "text": ""
+          },
+          {
+            "type": "account/rateLimits/updated",
+            "text": ""
+          },
+          {
+            "type": "item/started",
+            "text": ""
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": "CODE"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": "X"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": "_MAIN"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": "_CONT"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": "INU"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": "ED"
+          },
+          {
+            "type": "turn/moderationMetadata",
+            "text": ""
+          },
+          {
+            "type": "item/completed",
+            "text": "CODEX_MAIN_CONTINUED"
+          },
+          {
+            "type": "thread/tokenUsage/updated",
+            "text": ""
+          },
+          {
+            "type": "account/rateLimits/updated",
+            "text": ""
+          },
+          {
+            "type": "hook/started",
+            "text": ""
+          },
+          {
+            "type": "hook/completed",
+            "text": ""
+          },
+          {
+            "type": "thread/status/changed",
+            "text": ""
+          },
+          {
+            "type": "turn/completed",
+            "text": "turn completed"
+          }
+        ]
+      },
+      {
+        "name": "DSH main → Codex child → main continuation",
+        "passed": true,
+        "id": "35402999-b9b6-43ae-894a-ac22c40e04ea",
+        "trace": [
+          {
+            "type": "agent_thought_chunk",
+            "text": "The user wants me to call asteria_delegate exactly once with specific parameters, nothing else. Then reply DSH_MAIN_CONTINUED when the child result says completed.\n\nLet me call it."
+          },
+          {
+            "type": "usage_update",
+            "text": ""
+          },
+          {
+            "type": "tool_call",
+            "text": "mcp__asteria-delegation__asteria_delegate"
+          },
+          {
+            "type": "delegate_started",
+            "text": "codex 子代理开始：gpt-6-luna",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed",
+            "route": {
+              "cli": "codex",
+              "provider": null,
+              "model": "gpt-6-luna",
+              "effort": "low"
+            }
+          },
+          {
+            "type": "stderr",
+            "text": "{\"timestamp\":\"2026-10-21T11:36:06.117967Z\",\"level\":\"WARN\",\"fields\":{\"message\":\"ignoring interface.icon_small: icon path with '..' must resolve under plugin assets/\"},\"target\":\"codex_skills::interface\"}\n",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "stderr",
+            "text": "{\"timestamp\":\"2026-10-21T11:36:06.118041Z\",\"level\":\"WARN\",\"fields\":{\"message\":\"ignoring interface.icon_large: icon path with '..' must resolve under plugin assets/\"},\"target\":\"codex_skills::interface\"}\n",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "stderr",
+            "text": "{\"timestamp\":\"2026-10-21T11:36:06.141911Z\",\"level\":\"WARN\",\"fields\":{\"message\":\"Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell\"},\"target\":\"codex_core::shell_snapshot\"}\n",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "thread/started",
+            "text": "thread/started",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "warning",
+            "text": "warning",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "mcpServer/startupStatus/updated",
+            "text": "mcpServer/startupStatus/updated",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "mcpServer/startupStatus/updated",
+            "text": "mcpServer/startupStatus/updated",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "mcpServer/startupStatus/updated",
+            "text": "mcpServer/startupStatus/updated",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "mcpServer/startupStatus/updated",
+            "text": "mcpServer/startupStatus/updated",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "thread/settings/updated",
+            "text": "thread/settings/updated",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "mcpServer/startupStatus/updated",
+            "text": "mcpServer/startupStatus/updated",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "thread/status/changed",
+            "text": "thread/status/changed",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "turn/started",
+            "text": "turn inProgress",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "mcpServer/startupStatus/updated",
+            "text": "mcpServer/startupStatus/updated",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "mcpServer/startupStatus/updated",
+            "text": "mcpServer/startupStatus/updated",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "mcpServer/startupStatus/updated",
+            "text": "mcpServer/startupStatus/updated",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "hook/started",
+            "text": "hook/started",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "skills/changed",
+            "text": "skills/changed",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "hook/completed",
+            "text": "hook/completed",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "hook/started",
+            "text": "hook/started",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "hook/completed",
+            "text": "hook/completed",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "item/started",
+            "text": "item/started",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "item/completed",
+            "text": "item/completed",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "turn/moderationMetadata",
+            "text": "turn/moderationMetadata",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "hook/started",
+            "text": "hook/started",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "hook/completed",
+            "text": "hook/completed",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "item/started",
+            "text": "\"C:\\\\Users\\\\starryskyyy\\\\.cache\\\\codex-runtimes\\\\codex-primary-runtime\\\\dependencies\\\\native\\\\powershell\\\\pwsh.exe\" -Command \"Set-Content -LiteralPath 'child-from-codex.txt' -Value 'ASTERIA_APP_CODEX_CHILD_OK' -NoNewline; \"'$content = Get-Content -LiteralPath '\"'child-from-codex.txt' -Raw; if (\"'$co",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "item/commandExecution/outputDelta",
+            "text": "child-from-codex.txt",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "item/commandExecution/outputDelta",
+            "text": "\r\n",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "item/commandExecution/outputDelta",
+            "text": "child-from-dsh.txt",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "item/commandExecution/outputDelta",
+            "text": "\r\n",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "item/commandExecution/outputDelta",
+            "text": "CONTENT=ASTERIA_APP_CODEX_CHILD_OK",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "item/commandExecution/outputDelta",
+            "text": "\r\n",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "item/completed",
+            "text": "\"C:\\\\Users\\\\starryskyyy\\\\.cache\\\\codex-runtimes\\\\codex-primary-runtime\\\\dependencies\\\\native\\\\powershell\\\\pwsh.exe\" -Command \"Set-Content -LiteralPath 'child-from-codex.txt' -Value 'ASTERIA_APP_CODEX_CHILD_OK' -NoNewline; \"'$content = Get-Content -LiteralPath '\"'child-from-codex.txt' -Raw; if (\"'$co",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "hook/started",
+            "text": "hook/started",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "hook/completed",
+            "text": "hook/completed",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "thread/tokenUsage/updated",
+            "text": "thread/tokenUsage/updated",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "account/rateLimits/updated",
+            "text": "account/rateLimits/updated",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "item/started",
+            "text": "item/started",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": "CODE",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": "X",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": "_CHILD",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "item/agentMessage/delta",
+            "text": "_COMPLETE",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "turn/moderationMetadata",
+            "text": "turn/moderationMetadata",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "item/completed",
+            "text": "CODEX_CHILD_COMPLETE",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "thread/tokenUsage/updated",
+            "text": "thread/tokenUsage/updated",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "account/rateLimits/updated",
+            "text": "account/rateLimits/updated",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "hook/started",
+            "text": "hook/started",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "hook/completed",
+            "text": "hook/completed",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "thread/status/changed",
+            "text": "thread/status/changed",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "turn/completed",
+            "text": "turn completed",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed"
+          },
+          {
+            "type": "delegate_finished",
+            "text": "codex 子代理完成",
+            "agentId": "53b7d76c-4192-4a98-9151-51766fc7abed",
+            "status": "completed"
+          },
+          {
+            "type": "tool_call_update",
+            "text": ""
+          },
+          {
+            "type": "agent_message_chunk",
+            "text": "DSH_MAIN_CONTINUED"
+          },
+          {
+            "type": "usage_update",
+            "text": ""
+          }
+        ]
+      }
+    ]
+  },
+  "cancellation": [
+    {
+      "passed": true,
+      "parentCli": "codex",
+      "childCli": "dsh",
+      "id": "968d37f1-eeca-4cd1-b6c3-ccd12e8dadd3",
+      "status": "cancelled",
+      "stopMs": 937,
+      "noLateWrite": true,
+      "events": [
+        {
+          "type": "stderr"
+        },
+        {
+          "type": "stderr"
+        },
+        {
+          "type": "thread/started"
+        },
+        {
+          "type": "warning"
+        },
+        {
+          "type": "mcpServer/startupStatus/updated"
+        },
+        {
+          "type": "mcpServer/startupStatus/updated"
+        },
+        {
+          "type": "mcpServer/startupStatus/updated"
+        },
+        {
+          "type": "mcpServer/startupStatus/updated"
+        },
+        {
+          "type": "thread/settings/updated"
+        },
+        {
+          "type": "thread/status/changed"
+        },
+        {
+          "type": "turn/started"
+        },
+        {
+          "type": "mcpServer/startupStatus/updated"
+        },
+        {
+          "type": "mcpServer/startupStatus/updated"
+        },
+        {
+          "type": "account/updated"
+        },
+        {
+          "type": "stderr"
+        },
+        {
+          "type": "mcpServer/startupStatus/updated"
+        },
+        {
+          "type": "mcpServer/startupStatus/updated"
+        },
+        {
+          "type": "mcpServer/startupStatus/updated"
+        },
+        {
+          "type": "mcpServer/startupStatus/updated"
+        },
+        {
+          "type": "hook/started"
+        },
+        {
+          "type": "hook/completed"
+        },
+        {
+          "type": "hook/started"
+        },
+        {
+          "type": "hook/completed"
+        },
+        {
+          "type": "item/started"
+        },
+        {
+          "type": "item/completed"
+        },
+        {
+          "type": "turn/moderationMetadata"
+        },
+        {
+          "type": "thread/tokenUsage/updated"
+        },
+        {
+          "type": "account/rateLimits/updated"
+        },
+        {
+          "type": "skills/changed"
+        },
+        {
+          "type": "hook/started"
+        },
+        {
+          "type": "turn/moderationMetadata"
+        },
+        {
+          "type": "hook/completed"
+        },
+        {
+          "type": "item/started"
+        },
+        {
+          "type": "delegate_started",
+          "agentId": "e3689f2e-78ea-4d69-b422-e515f68201c1"
+        },
+        {
+          "type": "agent_thought_chunk",
+          "agentId": "e3689f2e-78ea-4d69-b422-e515f68201c1"
+        },
+        {
+          "type": "usage_update",
+          "agentId": "e3689f2e-78ea-4d69-b422-e515f68201c1"
+        },
+        {
+          "type": "tool_call",
+          "agentId": "e3689f2e-78ea-4d69-b422-e515f68201c1"
+        },
+        {
+          "type": "tool_call_update",
+          "agentId": "e3689f2e-78ea-4d69-b422-e515f68201c1"
+        },
+        {
+          "type": "delegate_finished",
+          "agentId": "e3689f2e-78ea-4d69-b422-e515f68201c1",
+          "status": "cancelled"
+        }
+      ]
+    },
+    {
+      "passed": true,
+      "parentCli": "dsh",
+      "childCli": "codex",
+      "id": "0e647349-aa12-4a52-87d2-c5a2c1c132eb",
+      "status": "cancelled",
+      "stopMs": 774,
+      "noLateWrite": true,
+      "events": [
+        {
+          "type": "agent_thought_chunk"
+        },
+        {
+          "type": "usage_update"
+        },
+        {
+          "type": "tool_call"
+        },
+        {
+          "type": "delegate_started",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "stderr",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "stderr",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "thread/started",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "warning",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "mcpServer/startupStatus/updated",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "mcpServer/startupStatus/updated",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "mcpServer/startupStatus/updated",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "mcpServer/startupStatus/updated",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "thread/settings/updated",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "thread/status/changed",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "turn/started",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "mcpServer/startupStatus/updated",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "mcpServer/startupStatus/updated",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "account/updated",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "stderr",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "mcpServer/startupStatus/updated",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "mcpServer/startupStatus/updated",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "mcpServer/startupStatus/updated",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "mcpServer/startupStatus/updated",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "hook/started",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "hook/completed",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "hook/started",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "hook/completed",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/started",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/completed",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/started",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/agentMessage/delta",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/agentMessage/delta",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/agentMessage/delta",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/agentMessage/delta",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/agentMessage/delta",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/agentMessage/delta",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/agentMessage/delta",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/agentMessage/delta",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/agentMessage/delta",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/agentMessage/delta",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/agentMessage/delta",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/agentMessage/delta",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/agentMessage/delta",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/agentMessage/delta",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/agentMessage/delta",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/agentMessage/delta",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/agentMessage/delta",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/agentMessage/delta",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/agentMessage/delta",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/agentMessage/delta",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/completed",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "hook/started",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "turn/moderationMetadata",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "hook/completed",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "item/started",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "thread/tokenUsage/updated",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "account/rateLimits/updated",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "hook/started",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "hook/completed",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "thread/status/changed",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "turn/completed",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c"
+        },
+        {
+          "type": "delegate_finished",
+          "agentId": "64e03d32-4281-42ee-b5d3-384d140d305c",
+          "status": "cancelled"
+        }
+      ]
+    }
+  ],
+  "uiFunctionalChecks": [
+    {
+      "name": "packaged launch, real catalogs and renderer isolation",
+      "passed": true
+    },
+    {
+      "name": "V1 archive retained without replay",
+      "passed": true
+    },
+    {
+      "name": "CLI-first picker uses DSH live provider/model catalog",
+      "passed": true,
+      "dshModels": 5
+    },
+    {
+      "name": "Chinese IME Enter and Shift+Enter",
+      "passed": true
+    },
+    {
+      "name": "packaged DSH main dispatches real Codex child, continues and renders Markdown",
+      "passed": true,
+      "id": "fe7a4597-5e83-45d9-8ad0-e579956075fa",
+      "chatWidth": {
+        "scroll": 1165,
+        "client": 1165
+      },
+      "reusedNativeFixture": true
+    },
+    {
+      "name": "main CLI switch bridges chat context and preserves historical author",
+      "passed": true
+    },
+    {
+      "name": "sidebar switching, draft isolation and conversation search",
+      "passed": true,
+      "idB": "0d5a2176-c104-4296-9768-4388bb4619f9"
+    },
+    {
+      "name": "normal and compact window layout",
+      "passed": true,
+      "layout": {
+        "width": 986,
+        "scroll": 986,
+        "bottom": 583.6666870117188,
+        "height": 658
+      }
+    },
+    {
+      "name": "changing workspace starts a new chat and preserves original conversation cwd",
+      "passed": true
+    },
+    {
+      "name": "packaged restart retains theme and conversations without replaying writes",
+      "passed": true,
+      "conversations": 2
+    },
+    {
+      "name": "renderer remains error free",
+      "passed": true
+    }
+  ],
+  "uiNotes": "UI acceptance completed in stages using the same real native conversation. The initial script read React state before the asynchronous workspace picker update; the follow-up waited for detachment and passed. Original logs are retained in the listed work fixture.",
+  "deployment": {
+    "installedAt": "2026-10-21T20:07:07.0831297+08:00",
+    "installRoot": "D:\\12345\\Asteria",
+    "executable": "D:\\12345\\Asteria\\Asteria.exe",
+    "backupRoot": "D:\\12345\\Asteria-v1-backup-20261021-200706",
+    "version": "2.0.0",
+    "appAsarSha256": "965920BEAD676A5C14D3F6A79797147ACEFBF03E3959185D3DCE6348B88B1C16",
+    "sourceRoot": "D:\\12345\\Asteria\\Source"
+  },
+  "installedLaunch": {
+    "root": "C:\\Users\\starryskyyy\\Documents\\Codex\\2026-10-19\\yu-e\\work\\acceptance-v2\\ui-preview-1792584467748",
+    "metadata": {
+      "version": "2.0.0",
+      "path": "D:\\12345\\Asteria\\resources\\app.asar",
+      "userData": "C:\\Users\\starryskyyy\\Documents\\Codex\\2026-10-19\\yu-e\\work\\acceptance-v2\\ui-preview-1792584467748\\profile\\electron-user-data"
+    },
+    "connections": {
+      "codex": {
+        "connected": true,
+        "models": 7,
+        "version": "codex-cli 0.162.1"
+      },
+      "dsh": {
+        "connected": true,
+        "models": 5,
+        "version": "0.2.0-rc.2"
+      }
+    },
+    "metrics": {
+      "title": "Asteria 2.0 · 聊天客户端",
+      "bodyWidth": 1466,
+      "width": 1466,
+      "height": 878,
+      "textarea": {
+        "x": 406.66668701171875,
+        "y": 731.6666870117188,
+        "width": 938.6666870117188,
+        "height": 72,
+        "top": 731.6666870117188,
+        "right": 1345.3333740234375,
+        "bottom": 803.6666870117188,
+        "left": 406.66668701171875
+      },
+      "font": "14px",
+      "models": [
+        "选择实时模型",
+        "GPT-6.1-Sol",
+        "GPT-6-Astra",
+        "GPT-6-Sol",
+        "GPT-6-Luna",
+        "GPT-5.6-Sol",
+        "GPT-5.6-Terra",
+        "GPT-5.6-Luna"
+      ]
+    },
+    "errors": []
+  }
+}

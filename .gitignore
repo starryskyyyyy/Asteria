@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+release/
+out/
+
+# electron-builder / packaging caches
+.electron-builder-cache/
+*.7z
+*.blockmap
+
+# test & tooling output
+coverage/
+test-out.txt
+*.log
+work/
+
+# editors & OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# local env
+.env
+.env.local

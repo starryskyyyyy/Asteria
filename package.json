@@ -1,0 +1,103 @@
+{
+  "name": "asteria",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Asteria 2.0 — 本机 CLI 智能体（Codex / DSH）多智能体协作客户端",
+  "license": "MIT",
+  "author": {
+    "name": "Asteria Contributors"
+  },
+  "type": "module",
+  "main": "dist/main/main.js",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "keywords": [
+    "electron",
+    "codex",
+    "dsh",
+    "multi-agent",
+    "ai-agent",
+    "acp",
+    "mcp",
+    "desktop-client"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "app": "electron .",
+    "start": "npm run build && electron .",
+    "build": "vite build && node scripts/build-main.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test \"tests/*.test.js\"",
+    "test:watch": "node --test --watch \"tests/*.test.js\"",
+    "clean": "node scripts/clean.mjs",
+    "icon": "node scripts/generate-icon.mjs",
+    "dist": "npm run build && electron-builder --win",
+    "dist:dir": "npm run build && electron-builder --win dir"
+  },
+  "dependencies": {
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "electron": "^44.9.0",
+    "electron-builder": "^26.15.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
+  },
+  "build": {
+    "appId": "ai.asteria.workbench",
+    "productName": "Asteria",
+    "copyright": "Copyright © 2026 Asteria Contributors",
+    "asar": true,
+    "compression": "maximum",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json",
+      "THIRD_PARTY_NOTICES.txt"
+    ],
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "dir",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Asteria",
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "build/icon.png",
+      "uninstallerIcon": "build/icon.png"
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "target": [
+        "AppImage"
+      ],
+      "category": "Development"
+    }
+  }
+}
