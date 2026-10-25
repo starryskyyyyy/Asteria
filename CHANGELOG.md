@@ -21,6 +21,7 @@
 
 ### 修复
 
+- 窗口标题改为按 `package.json` 的版本号动态生成（原先写死成 `Asteria 2.0`，与 2.1.0 不符）。
 - CLI 启动失败的提示不再固定写成 `app-server exited with code N`：现在会显示 `${进程名} 进程已退出（code N）` 并附上最后一条 stderr，Codex / ACP 通道挂掉时能直接看到真实原因（例如权限、登录态、参数错误）。
 
 ### 移除

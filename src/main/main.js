@@ -167,10 +167,13 @@ function createWindow() {
   nativeTheme.themeSource = 'dark';
   mainWindow = new BrowserWindow({
     width: 1480, height: 940, minWidth: 980, minHeight: 680,
-    backgroundColor: '#101319', title: `${APP_NAME} 2.0`, show: false,
+    backgroundColor: '#101319', title: `${APP_NAME} ${app.getVersion()}`, show: false,
     autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false },
   });
+  // 标题统一由主进程按 package.json 的版本号生成，避免页面里再写死一次版本。
+  mainWindow.on('page-title-updated', (event) => event.preventDefault());
+  mainWindow.setTitle(`${APP_NAME} ${app.getVersion()} · 多智能体协作客户端`);
   mainWindow.once('ready-to-show', () => mainWindow?.show());
   // The menu stays reachable with Alt but must not eat a strip of a dark UI.
   mainWindow.setMenuBarVisibility(false);
