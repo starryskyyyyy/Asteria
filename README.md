@@ -3,7 +3,13 @@
 > 把本机的 **Codex / Claude Code / DSH / WorkBuddy** 等 agent CLI 放在同一个桌面界面里对话，并允许主模型把子任务**委派给真实的子 CLI 会话**。
 
 Asteria 是一个 Electron 桌面客户端。它不自己实现模型，而是驱动你已经装好、已经登录的 CLI：每个对话绑定一个 CLI、一个模型和推理强度，UI 只负责呈现流式输出、工具调用、审批和持久化。
+## 📥 下载安装
 
+[![Download](https://img.shields.io/badge/下载最新版本-Windows_x64-2ea44f?style=for-the-badge&logo=windows)](https://github.com/starryskyyyyy/Asteria/releases/latest)
+
+[📦 查看所有版本](https://github.com/starryskyyyyy/Asteria/releases)
+
+> 支持 Windows 10/11。使用前需自行安装并登录至少一个受支持的 Agent CLI。
 ![主界面](docs/screenshots/Asteria-2.0-主界面.png)
 
 ## 核心能力
