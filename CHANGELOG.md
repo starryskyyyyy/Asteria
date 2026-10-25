@@ -2,6 +2,20 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 的结构，版本号使用 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+### 新增
+
+- 思考过程（思维链）面板：ACP 的 `agent_thought_chunk`、Claude 的 `thinking_delta`、Codex 的 reasoning summary 统一折叠为回复上方的「思考过程」区块，生成中自动展开并跟随滚动，结束后自动收起为一行摘要（可手动展开，摘要显示字数），遵守 `prefers-reduced-motion`。
+- `Message.reasoning` 字段：思维链与正文一起持久化，重开对话仍能看到上次的思考过程。
+
+### 修复
+
+- **回复不再「一次性出现」**：原先每个 token 都要先作为一条事件写进 JSONL、再排进串行事件链，才推给窗口，磁盘写入把 IPC 推送堵在了后面，导致界面上看到的是「已经落盘」的旧文本。现在 token 直接推窗口，只有工具调用、审批、状态等真正的里程碑事件才落盘；最终消息在 turn 结束时整体保存。实测真实 Codex：一条 157 字的回复分 108 次、跨 9.7 秒逐字显示。
+- 渲染层按动画帧合并消息更新（`requestAnimationFrame`），不再每个 token 触发一次整棵组件树重渲染与 Markdown 重解析。
+- 状态文案缩短：「思考中」「生成中…（可停止）」，较长的解释移到 `title` 悬浮提示。
+- 测试清理不再因 Windows 目录句柄未释放而偶发 `ENOTEMPTY`（新增 `tests/helpers/fs-utils.js`，对 `ENOTEMPTY`/`EPERM`/`EBUSY` 短暂重试）。
+
 ## [2.1.0] - 2026-10-23
 
 ### 新增

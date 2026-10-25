@@ -2,6 +2,7 @@ import type { Message, ToolEvent } from '../types';
 import { agentName } from '../lib/agents';
 import { DelegationPanel } from './DelegationPanel';
 import { Markdown } from './Markdown';
+import { ReasoningPanel } from './ReasoningPanel';
 
 /**
  * One chat bubble. The blinking caret only shows while THIS message is streaming,
@@ -34,6 +35,7 @@ export function MessageBubble({
           <span>{caption}</span>
         </div>
         <div className="message-content">
+          <ReasoningPanel text={message.reasoning || ''} streaming={streaming} />
           <Markdown text={message.text || ''} copied={copied} onCopied={onCopied} />
           {streaming ? <i className="typing-caret" aria-hidden="true" /> : null}
         </div>

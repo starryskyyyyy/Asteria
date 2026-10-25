@@ -144,11 +144,15 @@ export class StreamJsonAdapter {
         return;
       }
       case 'stream_event': {
-        const delta = payload.event?.delta?.text;
-        if (payload.event?.type === 'content_block_delta' && typeof delta === 'string') {
+        const event = payload.event || {};
+        const delta = event.delta || {};
+        if (event.type === 'content_block_delta' && delta.type === 'thinking_delta' && typeof delta.thinking === 'string') {
+          // Extended thinking arrives as its own block type; fold it into the reasoning panel.
+          emit({ type: 'reasoning_chunk', text: delta.thinking, raw: payload });
+        } else if (event.type === 'content_block_delta' && typeof delta.text === 'string') {
           state.sawDelta = true;
-          state.live += delta;
-          emit({ type: 'agent_message_chunk', text: delta, raw: payload });
+          state.live += delta.text;
+          emit({ type: 'agent_message_chunk', text: delta.text, raw: payload });
         }
         return;
       }

@@ -14,6 +14,17 @@ const activeStates = new Set(['connecting', 'running', 'awaiting-approval']);
 const MAX_CHILDREN = 6;
 const CHILD_TIMEOUT_MS = 10 * 60_000;
 const MAX_RAW_EVENT_BYTES = 32 * 1024;
+/** Notifications that carry the answer token by token (Codex app-server, ACP, stream-json). */
+const TEXT_EVENTS = new Set(['agent_message_chunk', 'item/agentMessage/delta']);
+/** Notifications that carry the model's chain of thought. */
+const REASONING_EVENTS = new Set(['agent_thought_chunk', 'reasoning_chunk', 'item/reasoning/summaryTextDelta', 'item/reasoning/textDelta']);
+
+/** Folds a finished `reasoning` item's summary/content blocks into plain text. */
+function reasoningText(item) {
+  if (item?.type !== 'reasoning') return '';
+  const blocks = [...(Array.isArray(item.summary) ? item.summary : []), ...(Array.isArray(item.content) ? item.content : [])];
+  return blocks.map((block) => (typeof block === 'string' ? block : block?.text || '')).join('').trim();
+}
 
 /** Main-process conversation API. All renderer inputs are revalidated here. */
 export class ConversationManager {
@@ -279,8 +290,31 @@ export class ConversationManager {
     const text = String(event.text || '');
     if (event.type === 'approval_request') await this.#registerApproval(ctl, ctl.adapter, ctl.conversation.route.cli, event);
     else if (event.type === 'approval_expired') this.#expireApproval(ctl, event);
-    if (event.type === 'agent_message_chunk' || event.type === 'item/agentMessage/delta') assistant.text += text;
-    else if (event.type === 'item/completed' && !assistant.text && event.raw?.params?.item?.type === 'agentMessage') assistant.text = event.raw.params.item.text || '';
+    // Token deltas are the hot path. They are painted into the window immediately and kept OUT of
+    // the event log: the finished message is what gets persisted, and one appendEvent (plus its
+    // JSON.stringify) per token is what used to make the reply appear in one lump at the end.
+    if (REASONING_EVENTS.has(event.type)) {
+      if (text) {
+        assistant.reasoning = (assistant.reasoning || '') + text;
+        this.#emit({ kind: 'message', conversationId: ctl.conversation.id, message: { ...assistant } });
+      }
+      return;
+    }
+    if (TEXT_EVENTS.has(event.type)) {
+      if (text) {
+        assistant.text += text;
+        this.#emit({ kind: 'message', conversationId: ctl.conversation.id, message: { ...assistant } });
+      }
+      return;
+    }
+    if (event.type === 'item/completed') {
+      const item = event.raw?.params?.item;
+      // Non-streaming providers ship the whole message at once; only then is this the text source.
+      if (!assistant.text && item?.type === 'agentMessage') assistant.text = item.text || '';
+      // Some Codex builds only send the finished reasoning item, without summary deltas.
+      const thought = reasoningText(item);
+      if (thought && !assistant.reasoning) assistant.reasoning = thought;
+    }
     await this.#event(ctl, event.type || 'event', text, { provider: ctl.conversation.route.cli, raw: event.raw });
     this.#emit({ kind: 'message', conversationId: ctl.conversation.id, message: { ...assistant } });
   }

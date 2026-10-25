@@ -19,6 +19,7 @@ Asteria 是一个 Electron 桌面客户端。它不自己实现模型，而是�
 - **多智能体委派**：主模型可通过 `asteria_list_models` / `asteria_delegate` 两个工具，把有界子任务派给另一个 CLI 模型；子会话是独立进程，最多 6 个、串行执行，结果结构化交回主模型。Codex 走 dynamic tools + `item/tool/call`，ACP 通道走会话级 MCP loopback broker（不改动你的全局 profile）。
 - **审批可见可控**：CLI 的写文件/执行命令请求统一进 UI 队列，单次允许或拒绝、不升级成永久规则，未知选项不会自动批准；provider 侧超时会同步清掉挂起的对话框。
 - **可中断**：停止主 turn 会中止全部子 turn，并丢弃取消后返回的子结果。
+- **逐字流式 + 思考过程**：模型的每个 token 直接从主进程推给窗口（不逐条落盘、不排在磁盘 IPC 后面），回复是逐字长出来的；CLI 暴露思维链时（ACP 的 `agent_thought_chunk`、Claude 的 `thinking_delta`、Codex 的 reasoning summary）会在回复上方折叠成「思考过程」，生成中自动展开、结束后自动收起。Codex 是否出现思考摘要取决于账号与模型是否返回 reasoning summary。
 - **本地持久化**：对话索引与事件流分离（`conversations.json` + 逐会话 `*.jsonl`），事件流按大小裁剪，写入采用原子替换 + 备份回滚；V1 的旧运行记录只作为只读归档展示，不会重放。
 - **双主题**：Mocha 暗色 / Latte 亮色，切换后 Windows 标题栏与窗口边框同步跟随。
 

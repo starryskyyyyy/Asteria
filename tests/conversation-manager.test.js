@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp } from 'node:fs/promises';
+import { removeDir } from './helpers/fs-utils.js';
 import os from 'node:os';
 import path from 'node:path';
 import { ConversationManager } from '../src/main/conversation-manager.js';
@@ -36,7 +37,7 @@ test('main model receives a real broker callback result and persists native sess
     assert.match(conversation.messages.at(-1).text, /Child completed/);
     assert(conversation.events.some((event) => event.type === 'delegate_finished'));
     await manager.dispose();
-  } finally { await rm(root, { recursive: true, force: true }); }
+  } finally { await removeDir(root); }
 });
 
 test('second send is rejected while the first turn owns the conversation scheduler', async () => {
@@ -54,7 +55,7 @@ test('second send is rejected while the first turn owns the conversation schedul
     release({ status: 'completed', output: 'done', sessionId: 'session' });
     await operation;
     await manager.dispose();
-  } finally { await rm(root, { recursive: true, force: true }); }
+  } finally { await removeDir(root); }
 });
 
 test('terminal status is published only after adapter cleanup releases the scheduler', async () => {
@@ -90,7 +91,7 @@ test('terminal status is published only after adapter cleanup releases the sched
     const nextId = await createdAfterTurnComplete;
     assert.ok(nextId);
     await manager.dispose();
-  } finally { releaseDispose?.(); await manager?.dispose().catch(() => {}); await rm(root, { recursive: true, force: true }); }
+  } finally { releaseDispose?.(); await manager?.dispose().catch(() => {}); await removeDir(root); }
 });
 
 test('approval ids remain unique across independent main and child RPC peers', async () => {
@@ -127,7 +128,7 @@ test('approval ids remain unique across independent main and child RPC peers', a
     const operation = manager.active.operation; await operation;
     assert(adapters.some((adapter) => adapter.approved?.id === 1 && adapter.approved.accepted === true));
     await manager.dispose();
-  } finally { await manager?.dispose().catch(() => {}); await rm(root, { recursive: true, force: true }); }
+  } finally { await manager?.dispose().catch(() => {}); await removeDir(root); }
 });
 
 test('archive is reversible and the flag survives a reload', async () => {
@@ -153,5 +154,43 @@ test('archive is reversible and the flag survives a reload', async () => {
     assert.equal(list.length, 1);
     assert.equal(list[0].archived, true);
     await reloaded.dispose();
-  } finally { await rm(root, { recursive: true, force: true }); }
+  } finally { await removeDir(root); }
+});
+
+test('token deltas reach the window one at a time and never land in the event log', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'asteria-chat-stream-'));
+  try {
+    class StreamingAdapter extends FakeAdapter {
+      async run(_options, onEvent) {
+        onEvent({ type: 'agent_thought_chunk', text: '先看调用链' });
+        onEvent({ type: 'agent_message_chunk', text: '第一段。' });
+        onEvent({ type: 'agent_message_chunk', text: '第二段。' });
+        return { status: 'completed', output: '第一段。第二段。', sessionId: 'stream-session' };
+      }
+    }
+    const pushes = [];
+    const manager = new ConversationManager({ root, adapterFactory: () => new StreamingAdapter('codex') });
+    manager.subscribe((event) => {
+      if (event.kind === 'message' && event.message.role === 'assistant') pushes.push({ text: event.message.text, reasoning: event.message.reasoning || '' });
+    });
+    await manager.bootstrap();
+    manager.catalogs.codex = [{ id: 'gpt' }];
+    const id = await manager.createConversation({ cwd: process.cwd(), cli: 'codex', model: 'gpt' });
+    await manager.sendMessage(id, 'stream it');
+    while (manager.active) await manager.active.operation;
+
+    // Each delta is painted on its own instead of arriving with the finished reply.
+    assert.deepEqual(pushes.slice(0, 3), [
+      { text: '', reasoning: '先看调用链' },
+      { text: '第一段。', reasoning: '先看调用链' },
+      { text: '第一段。第二段。', reasoning: '先看调用链' },
+    ]);
+
+    const conversation = await manager.getConversation(id);
+    assert.equal(conversation.messages.at(-1).reasoning, '先看调用链');
+    assert.equal(conversation.messages.at(-1).text, '第一段。第二段。');
+    // One appendEvent per token is exactly what made the reply appear in one lump; keep them out.
+    assert.equal(conversation.events.filter((event) => event.type === 'agent_message_chunk' || event.type === 'agent_thought_chunk').length, 0);
+    await manager.dispose();
+  } finally { await removeDir(root); }
 });

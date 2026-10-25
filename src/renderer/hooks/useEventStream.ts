@@ -1,5 +1,5 @@
 import { useEffect, useRef, type Dispatch, type SetStateAction } from 'react';
-import type { ApprovalRequest, AsteriaEvent, BootstrapResult, Catalogs, Connections, Conversation } from '../types';
+import type { ApprovalRequest, AsteriaEvent, BootstrapResult, Catalogs, Connections, Conversation, Message } from '../types';
 import { EMPTY_CATALOGS, mergeConversation, upsertMessage } from '../lib/state';
 
 /** State setters the stream needs; `useState` setters are stable, so this stays render-safe. */
@@ -87,7 +87,42 @@ export function useEventStream(options: EventStreamOptions) {
         latest.current.onBootstrapError(failure);
       });
 
-    const unsubscribe = bridge.onEvent((event) => applyEvent(event, latest.current));
-    return () => { disposed = true; unsubscribe(); };
+    // Message pushes arrive once per token. Hitting `setConversation` for every one of them makes
+    // React re-render and re-parse Markdown hundreds of times a second, which looks like the reply
+    // stalling and then landing all at once. Coalesce to one state write per animation frame.
+    const pending = new Map<string, { conversationId: string; message: Message }>();
+    let frame = 0;
+    const flush = () => {
+      frame = 0;
+      if (!pending.size) return;
+      const batch = [...pending.values()];
+      pending.clear();
+      latest.current.setConversation((current) => {
+        if (!current) return current;
+        let next = current;
+        for (const item of batch) {
+          if (next.id !== item.conversationId) continue;
+          next = upsertMessage(next, item.message);
+        }
+        return next;
+      });
+    };
+
+    const unsubscribe = bridge.onEvent((event) => {
+      if (event.kind === 'message') {
+        // Every delta carries the accumulated text, so the newest entry wins outright.
+        pending.set(`${event.conversationId}:${event.message.id}`, { conversationId: event.conversationId, message: event.message });
+        if (!frame) frame = requestAnimationFrame(flush);
+        return;
+      }
+      applyEvent(event, latest.current);
+    });
+
+    return () => {
+      disposed = true;
+      if (frame) cancelAnimationFrame(frame);
+      pending.clear();
+      unsubscribe();
+    };
   }, []);
 }

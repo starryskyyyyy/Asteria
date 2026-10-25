@@ -37,7 +37,7 @@ export function Composer({
         <textarea
           rows={2}
           value={draft}
-          placeholder={thisActive ? '正在生成…请使用停止按钮中止。' : '给模型发送消息…（Enter 发送，Shift+Enter 换行）'}
+          placeholder={thisActive ? '生成中…（可停止）' : '给模型发送消息…（Enter 发送，Shift+Enter 换行）'}
           onChange={(event) => onDraftChange(event.target.value)}
           onKeyDown={handleKeyDown}
           onCompositionStart={() => { composingRef.current = true; setComposing(true); }}

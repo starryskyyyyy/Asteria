@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, readdir, rm, mkdir, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, mkdir, writeFile } from 'node:fs/promises';
+import { removeDir } from './helpers/fs-utils.js';
 import os from 'node:os';
 import path from 'node:path';
 import { ConversationStore } from '../src/main/conversation-store.js';
@@ -17,7 +18,7 @@ test('schema 2 stores conversations atomically and retains messages and events',
     assert.equal(loaded.messages[0].text, '你好');
     assert.equal(loaded.events[0].id, 'e1');
     assert.equal(JSON.parse(await readFile(path.join(root, 'conversations.json'), 'utf8')).schemaVersion, 2);
-  } finally { await rm(root, { recursive: true, force: true }); }
+  } finally { await removeDir(root); }
 });
 
 test('legacy V1 runs migrate to a read-only archive without replaying active work', async () => {
@@ -32,7 +33,7 @@ test('legacy V1 runs migrate to a read-only archive without replaying active wor
     assert.equal(archive.length, 1);
     assert.equal(archive[0].status, 'interrupted');
     assert.equal((await store.get('old')), null);
-  } finally { await rm(root, { recursive: true, force: true }); }
+  } finally { await removeDir(root); }
 });
 
 test('store recovers a valid Windows replacement backup and preserves the damaged main file', async () => {
@@ -48,7 +49,7 @@ test('store recovers a valid Windows replacement backup and preserves the damage
     assert.equal(JSON.parse(await readFile(main, 'utf8')).conversations.recovered.title, 'Recovered');
     const names = await import('node:fs/promises').then(({ readdir }) => readdir(root));
     assert(names.some((name) => name.startsWith('conversations.json.corrupt-')));
-  } finally { await rm(root, { recursive: true, force: true }); }
+  } finally { await removeDir(root); }
 });
 
 test('store rejects corrupt main and backup without overwriting either source file', async () => {
@@ -62,7 +63,7 @@ test('store rejects corrupt main and backup without overwriting either source fi
     await assert.rejects(store.initialize(), /对话库及备份均无法读取/);
     assert.equal(await readFile(backup, 'utf8'), '{backup damaged');
     assert.equal(await readFile(main, 'utf8'), '{main damaged');
-  } finally { await rm(root, { recursive: true, force: true }); }
+  } finally { await removeDir(root); }
 });
 
 test('conversation ids that could escape the state directory are rejected', async () => {
@@ -76,7 +77,7 @@ test('conversation ids that could escape the state directory are rejected', asyn
     // Legacy names stay addressable, they just never resolve to a file outside the state root.
     assert.equal(await store.get('legacy_run-01'), null);
     assert.deepEqual(await store.readEvents('legacy_run-01'), []);
-  } finally { await rm(root, { recursive: true, force: true }); }
+  } finally { await removeDir(root); }
 });
 
 test('events live in their own stream, never duplicated into the index, and trim by size', async () => {
@@ -101,5 +102,5 @@ test('events live in their own stream, never duplicated into the index, and trim
 
     const leftovers = (await readdir(root)).filter((name) => name.endsWith('.tmp'));
     assert.deepEqual(leftovers, []);
-  } finally { await rm(root, { recursive: true, force: true }); }
+  } finally { await removeDir(root); }
 });

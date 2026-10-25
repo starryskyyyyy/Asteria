@@ -37,6 +37,8 @@ export type Message = {
   turnId: string;
   role: 'user' | 'assistant';
   text: string;
+  /** Chain of thought streamed by the model, when the provider exposes it. */
+  reasoning?: string;
   route?: Route;
   status?: string;
   at: string;
